@@ -138,18 +138,7 @@ for file in tqdm(files):
 # with open(filename1,'w') as file_obj1:
 #         json.dump(Tmax_dict,file_obj1)
 
-#%%
-# # Store the maximum temperature in HITRAN database
-# Tmax_dict=dict()
-# for molecule in tqdm(Cp_dict):
-#     cp_temp=Cp_dict[molecule]
-#     Tmax_this=np.max(np.float_(list(cp_temp.keys())))
-#     Tmax=min(Tmax_this,6000)
-#     Tmax_dict[molecule]=Tmax
 
-# filename1='Tmax_dict.json'
-# with open(filename1,'w') as file_obj1:
-#         json.dump(Tmax_dict,file_obj1)
 
 # %%
 # Generate a JANAF dictionary 
@@ -178,4 +167,60 @@ for file in tqdm(files):
 # filename2='Cp_JANAFdict.json'
 # with open(filename2,'w') as file_obj2:
 #         json.dump(Cp_JANAF,file_obj2)
+# %%
+# Read coefficients from original nasa glenn polynomials
+temprange_nasa=dict()
+fit_nasa=dict()
+
+with open('nasa9.dat', 'r') as nasa_file:
+    keep_searching = True
+
+    temp_range = None
+    temp_intervals = None
+    coefficients = None
+    
+
+
+    while keep_searching:
+        line = nasa_file.readline()
+        
+        if line=='':
+            keep_searching = False
+            
+            # if Mg == None:
+            #     raise ValueError("Unknown species: {}".format(species))
+
+
+        elif line.split()[0] in Cp_dict:
+
+            species=line.split()[0]
+            # Get reference for the species data:
+            data = nasa_file.readline()
+            temp_intervals = int(data[0:2])
+
+            temp_range = np.zeros([temp_intervals, 2])
+            coefficients = np.zeros([temp_intervals, 7])
+            integration_cts = np.zeros([temp_intervals, 2])
+            
+            for ii in range(temp_intervals):
+                temprange_data = nasa_file.readline()
+                coeffs_line_1 = nasa_file.readline()
+                coeffs_line_2 = nasa_file.readline()
+
+                temp_range[ii][:]=[1,2]
+                temp_range[ii,:] = [float(temprange_data[0:11]), float(temprange_data[11:22])]
+                coefficients[ii,:] = [float(coeffs_line_1[0:16].replace('D','E')), float(coeffs_line_1[16:32].replace('D','E')),
+                                float(coeffs_line_1[32:48].replace('D','E')), float(coeffs_line_1[48:64].replace('D','E')),
+                                float(coeffs_line_1[64:80].replace('D','E')), float(coeffs_line_2[0:16].replace('D','E')),
+                                float(coeffs_line_2[16:32].replace('D','E'))]
+            
+            temprange_nasa[species]=temp_range
+            fit_nasa[species]=coefficients
+                       
+        else:
+            pass
+# %%
+fit_nasa['CO'][0][1]
+# %%
+temprange_nasa['NO2']
 # %%
