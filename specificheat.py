@@ -117,3 +117,30 @@ with open(filename1,'w') as file_obj1:
         json.dump(Tmax_dict,file_obj1)
 
 # %%
+# Generate a JANAF dictionary 
+path = "JANAF"
+files= os.listdir(path) 
+Cp_JANAF=dict()
+for file in tqdm(files): 
+     if ".txt" in file:
+        if not os.path.isdir(file): 
+            filename=path+"/"+file
+            molecule=file.split(".")[0]
+            print(molecule)
+            # Read partition functions from database
+            T,Cp=np.loadtxt(filename,usecols=(0,1),unpack=True)
+
+            for i in range(len(T)):
+                t=T[i]    
+                cp=float(Cp[i])  
+                if molecule in Cp_JANAF:
+                    Cp_JANAF[molecule][t]=cp
+                else:
+                    Cp_JANAF[molecule]=dict()
+                    Cp_JANAF[molecule][t]=cp  
+
+
+filename2='Cp_JANAFdict.json'
+with open(filename2,'w') as file_obj2:
+        json.dump(Cp_JANAF,file_obj2)
+# %%
