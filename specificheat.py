@@ -222,12 +222,23 @@ with open('nasa9.dat', 'r') as nasa_file:
 
 # %%
 for molecule in tqdm(Cp_dict):
-
-    #print JANAF
-    exist_JANAF=False
     Tmax=Tmax_dict[molecule]
+
+    # plot specific heat in this work after fitting
+    cp_Temp=Cp_dict[molecule]
+    T=[]
+    Cp=[]
+    for t in cp_Temp:
+        if (float(t) <=Tmax) & (float(t) >=298):
+            T.append(float(t))
+            Cp.append(float(cp_Temp[t]))
+    plt.plot(T,Cp,color="violet",label="This work")
+
+    # plot JANAF specific heat
+    exist_JANAF=False
     if molecule in Cp_JANAF:
         exist_JANAF=True
+
         J_temp=Cp_JANAF[molecule]
         T_J=[]
         Cp_J=[]
@@ -239,14 +250,12 @@ for molecule in tqdm(Cp_dict):
 
     exist_nasa=False
 
+    #plot specific heat in this work after fitting
     if Tmax<=1000:
         x=np.arange(298.15, Tmax, 0.01)
         coefficient_this=fit_dictionary[molecule][0]
         Cp_fit_this=R*(coefficient_this[0]*x**(-2)+coefficient_this[1]*x**(-1)+coefficient_this[2]+coefficient_this[3]*x+coefficient_this[4]*x**2+coefficient_this[5]*x**3+coefficient_this[6]*x**4)
-        # if molecule in fit_nasa:
-        #     exist_nasa=True
-            # coefficient_nasa=fit_nasa[molecule][0]
-            # Cp_fit_nasa=R*(coefficient_nasa[0]*x**(-2)+coefficient_nasa[1]*x**(-1)+coefficient_nasa[2]+coefficient_nasa[3]*x+coefficient_nasa[4]*x**2+coefficient_nasa[5]*x**3+coefficient_nasa[6]*x**4)
+    
     else:
         x1=np.arange(298.15, 1000, 0.01)
         coefficient_this1=fit_dictionary[molecule][0]
@@ -263,9 +272,10 @@ for molecule in tqdm(Cp_dict):
         x=np.hstack((x1,x2))
         Cp_fit_this=np.hstack(( Cp_fit_this1, Cp_fit_this2))
 
-    plt.plot(x,Cp_fit_this,color="red",label="This work")    
+    plt.plot(x,Cp_fit_this,color="red",label="This work_Fit")    
 
 
+    # plot specific heat using nasa glenn polynomials
     if molecule in fit_nasa:
         exist_nasa=True
         if Tmax<=1000:
