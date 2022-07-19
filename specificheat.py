@@ -19,6 +19,8 @@ for i in range(len(split_list)):
 # %%
 # Calculate specific heat
 Cp_dict=dict()
+Tmax_dict=dict()
+fit_dictionary=dict()
 path = "data"
 files= os.listdir(path) 
 for file in tqdm(files): 
@@ -98,49 +100,82 @@ for file in tqdm(files):
             Cp_df=pd.DataFrame({'T(K)': T_this, 'Cp_Thiswork': Cp_this})
             Cp_df.to_csv(storename,index=False)
 
-filename='Cp_thiswork.json'
-with open(filename,'w') as file_obj:
-        json.dump(Cp_dict,file_obj)
+            # Store the maximum temperature in HITRAN database
+            Tmax_this=T_this[-1]
+            Tmax=min(Tmax_this,6000)
+            Tmax_dict[molecule]=Tmax
 
+            # Fit the specific heat
+            fit_Tinterval=[]
+            fit_Cpinterval=[]
+            if Tmax<=1000:
+                temp_intervals=1
+                fit_Tinterval.append(T_this[98:int(Tmax-199)])
+                fit_Cpinterval.append(Cp_this[98:int(Tmax-199)])    
+            else:
+                temp_intervals=2
+                fit_Tinterval.append(T_this[98:801])
+                fit_Cpinterval.append(Cp_this[98:801])
+                fit_Tinterval.append(T_this[800:int(Tmax-199)])
+                fit_Cpinterval.append(Cp_this[800:int(Tmax-199)])
+
+            coefficients = np.zeros([temp_intervals, 7])
+            for ii in range(len(fit_Tinterval)):
+                x=np.array(fit_Tinterval[ii])
+                Cp_interval=np.array(fit_Cpinterval[ii])
+                y=(Cp_interval/R)*x*x
+                z1 = np.polyfit(x,y,6) 
+                p1= np.poly1d(z1)
+                for i in range(7):
+                    coefficients[ii,i]=p1[i]
+            fit_dictionary[molecule]=coefficients
+
+# filename='Cp_thiswork.json'
+# with open(filename,'w') as file_obj:
+#         json.dump(Cp_dict,file_obj)
+
+# filename1='Tmax_dict.json'
+# with open(filename1,'w') as file_obj1:
+#         json.dump(Tmax_dict,file_obj1)
 
 #%%
-# Store the maximum temperature in HITRAN database
-Tmax_dict=dict()
-for molecule in tqdm(Cp_dict):
-    cp_temp=Cp_dict[molecule]
-    Tmax_this=np.max(np.float_(list(cp_temp.keys())))
-    Tmax=min(Tmax_this,6000)
-    Tmax_dict[molecule]=Tmax
+# # Store the maximum temperature in HITRAN database
+# Tmax_dict=dict()
+# for molecule in tqdm(Cp_dict):
+#     cp_temp=Cp_dict[molecule]
+#     Tmax_this=np.max(np.float_(list(cp_temp.keys())))
+#     Tmax=min(Tmax_this,6000)
+#     Tmax_dict[molecule]=Tmax
 
-filename1='Tmax_dict.json'
-with open(filename1,'w') as file_obj1:
-        json.dump(Tmax_dict,file_obj1)
+# filename1='Tmax_dict.json'
+# with open(filename1,'w') as file_obj1:
+#         json.dump(Tmax_dict,file_obj1)
 
 # %%
 # Generate a JANAF dictionary 
-path = "JANAF"
-files= os.listdir(path) 
-Cp_JANAF=dict()
-for file in tqdm(files): 
-     if ".txt" in file:
-        if not os.path.isdir(file): 
-            filename=path+"/"+file
-            molecule=file.split(".")[0]
-            print(molecule)
-            # Read partition functions from database
-            T,Cp=np.loadtxt(filename,usecols=(0,1),unpack=True)
+# path = "JANAF"
+# files= os.listdir(path) 
+# Cp_JANAF=dict()
+# for file in tqdm(files): 
+#      if ".txt" in file:
+#         if not os.path.isdir(file): 
+#             filename=path+"/"+file
+#             molecule=file.split(".")[0]
+#             print(molecule)
+#             # Read partition functions from database
+#             T,Cp=np.loadtxt(filename,usecols=(0,1),unpack=True)
 
-            for i in range(len(T)):
-                t=T[i]    
-                cp=float(Cp[i])  
-                if molecule in Cp_JANAF:
-                    Cp_JANAF[molecule][t]=cp
-                else:
-                    Cp_JANAF[molecule]=dict()
-                    Cp_JANAF[molecule][t]=cp  
+#             for i in range(len(T)):
+#                 t=T[i]    
+#                 cp=float(Cp[i])  
+#                 if molecule in Cp_JANAF:
+#                     Cp_JANAF[molecule][t]=cp
+#                 else:
+#                     Cp_JANAF[molecule]=dict()
+#                     Cp_JANAF[molecule][t]=cp  
 
 
-filename2='Cp_JANAFdict.json'
-with open(filename2,'w') as file_obj2:
-        json.dump(Cp_JANAF,file_obj2)
+# filename2='Cp_JANAFdict.json'
+# with open(filename2,'w') as file_obj2:
+#         json.dump(Cp_JANAF,file_obj2)
 # %%
