@@ -9,13 +9,13 @@ import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 # %%
 # Add the split points for molecules in HITRAN  
-list=[['CH4'],['H2O2'],['CLO'],['HCN','CO','HF','HI','N2','NH3','OCS','OH','PH3','C2H2','C2N2','C2H4','CH3CL','CH3F','OH','O2'],['SF6'],['CS','HO2','NO','NO+','SO'],['H2','HBr','HCL'],['SO3'],['C2H6'],['C4H2']]
+split_list=[['CH4'],['H2O2'],['CLO'],['HCN','CO','HF','HI','N2','NH3','OCS','OH','PH3','C2H2','C2N2','C2H4','CH3CL','CH3F','OH','O2'],['SF6'],['CS','HO2','NO','NO+','SO'],['H2','HBr','HCL'],['SO3'],['C2H6'],['C4H2']]
 split=[[200,500,1300,1500],[200,1500],[200,4000],[200,1000],[200,1000,2000,3000,4000],[200,1000,4000],[200,1000,5000],[200,3500,200,500,650],[200,1000,2000,3000],[200,1000,2000]]
 split_dict=dict()
-for i in range(len(list)):
-    for j in range(len(list[i])):
-        if list[i][j] not in split_dict:
-            split_dict[list[i][j]]=split[i]
+for i in range(len(split_list)):
+    for j in range(len(split_list[i])):
+        if split_list[i][j] not in split_dict:
+            split_dict[split_list[i][j]]=split[i]
 # %%
 # Calculate specific heat
 Cp_dict=dict()
@@ -101,4 +101,19 @@ for file in tqdm(files):
 filename='Cp_thiswork.json'
 with open(filename,'w') as file_obj:
         json.dump(Cp_dict,file_obj)
+
+
+#%%
+# Store the maximum temperature in HITRAN database
+Tmax_dict=dict()
+for molecule in tqdm(Cp_dict):
+    cp_temp=Cp_dict[molecule]
+    Tmax_this=np.max(np.float_(list(cp_temp.keys())))
+    Tmax=min(Tmax_this,6000)
+    Tmax_dict[molecule]=Tmax
+
+filename1='Tmax_dict.json'
+with open(filename1,'w') as file_obj1:
+        json.dump(Tmax_dict,file_obj1)
+
 # %%
