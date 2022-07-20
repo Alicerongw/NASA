@@ -138,6 +138,48 @@ for file in tqdm(files):
 # with open(filename1,'w') as file_obj1:
 #         json.dump(Tmax_dict,file_obj1)
 
+#%%
+# Store the fit coefficients in a csv file
+molecule_list=[]
+Tmin_list=[]
+Tmax_list=[]
+a1_list=[]
+a2_list=[]
+a3_list=[]
+a4_list=[]
+a5_list=[]
+a6_list=[]
+a7_list=[]
+for molecule in fit_dictionary:
+    coefficient_temp=fit_dictionary[molecule]
+    Tmax=Tmax_dict[molecule]
+    if Tmax<=1000:
+        temp_intervals=1
+    else:
+        temp_intervals=2
+    
+    for i in range(temp_intervals):
+        if i ==0:
+            Tmin_list.append(298.15)
+            if temp_intervals==1:
+                Tmax_list.append(Tmax)
+            else:
+                Tmax_list.append(1000)
+        if i ==1:
+            Tmin_list.append(1000)
+            Tmax_list.append(Tmax)
+        molecule_list.append(molecule)
+        a1_list.append(coefficient_temp[i][0])
+        a2_list.append(coefficient_temp[i][1])
+        a3_list.append(coefficient_temp[i][2])
+        a4_list.append(coefficient_temp[i][3])
+        a5_list.append(coefficient_temp[i][4])
+        a6_list.append(coefficient_temp[i][5])
+        a7_list.append(coefficient_temp[i][6])
+
+    
+fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
+fit_data.to_csv("coefficients.csv",index=False)
 
 
 # %%
