@@ -178,8 +178,8 @@ for molecule in fit_dictionary:
         a7_list.append(coefficient_temp[i][6])
 
     
-fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
-fit_data.to_csv("coefficients.csv",index=False)
+# fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
+# fit_data.to_csv("coefficients.csv",index=False)
 
 
 # %%
@@ -213,7 +213,6 @@ for file in tqdm(files):
 # Read coefficients from original nasa glenn polynomials
 temprange_nasa=dict()
 fit_nasa=dict()
-
 with open('nasa9.dat', 'r') as nasa_file:
     keep_searching = True
 
@@ -229,13 +228,15 @@ with open('nasa9.dat', 'r') as nasa_file:
         if line=='':
             keep_searching = False
             
-            # if Mg == None:
-            #     raise ValueError("Unknown species: {}".format(species))
 
 
-        elif line.split()[0] in Cp_dict:
+        elif (line.split()[0] in Cp_dict) or (line.split()[0]=='C2H2,acetylene'):
+            print(line.split()[0])
+            if line.split()[0]=='C2H2,acetylene':
+                species='C2H2'
+            else:
+                species=line.split()[0]
 
-            species=line.split()[0]
             # Get reference for the species data:
             data = nasa_file.readline()
             temp_intervals = int(data[0:2])
@@ -263,6 +264,89 @@ with open('nasa9.dat', 'r') as nasa_file:
             pass
 
 # %%
+# Compare the specific heat results with existing sources
+# for molecule in tqdm(Cp_dict):
+#     Tmax=Tmax_dict[molecule]
+
+#     # plot specific heat in this work after fitting
+#     cp_Temp=Cp_dict[molecule]
+#     T=[]
+#     Cp=[]
+#     for t in cp_Temp:
+#         if (float(t) <=Tmax) & (float(t) >=298):
+#             T.append(float(t))
+#             Cp.append(float(cp_Temp[t]))
+#     plt.plot(T,Cp,color="violet",label="This work")
+
+#     # plot JANAF specific heat
+#     if molecule in Cp_JANAF:
+
+#         J_temp=Cp_JANAF[molecule]
+#         T_J=[]
+#         Cp_J=[]
+#         for t in J_temp:
+#             if (float(t) <=Tmax) & (float(t) >=298):
+#                 T_J.append(float(t))
+#                 Cp_J.append(float(J_temp[t])) 
+#         plt.plot(T_J,Cp_J,color="blue",label="JANAF")  
+
+
+#     #plot specific heat in this work after fitting
+#     if Tmax<=1000:
+#         x=np.arange(298.15, Tmax, 0.01)
+#         coefficient_this=fit_dictionary[molecule][0]
+#         Cp_fit_this=R*(coefficient_this[0]*x**(-2)+coefficient_this[1]*x**(-1)+coefficient_this[2]+coefficient_this[3]*x+coefficient_this[4]*x**2+coefficient_this[5]*x**3+coefficient_this[6]*x**4)
+    
+#     else:
+#         x1=np.arange(298.15, 1000, 0.01)
+#         coefficient_this1=fit_dictionary[molecule][0]
+#         Cp_fit_this1=R*(coefficient_this1[0]*x1**(-2)+coefficient_this1[1]*x1**(-1)+coefficient_this1[2]+coefficient_this1[3]*x1+coefficient_this1[4]*x1**2+coefficient_this1[5]*x1**3+coefficient_this1[6]*x1**4)
+#         if molecule in fit_nasa:
+#             coefficient_nasa1=fit_nasa[molecule][0]
+#             Cp_fit_nasa1=R*(coefficient_nasa1[0]*x**(-2)+coefficient_nasa1[1]*x**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x+coefficient_nasa1[4]*x**2+coefficient_nasa1[5]*x**3+coefficient_nasa1[6]*x**4)
+#         x2=np.arange(1000, Tmax, 0.01)
+#         coefficient_this2=fit_dictionary[molecule][1]
+#         Cp_fit_this2=R*(coefficient_this2[0]*x2**(-2)+coefficient_this2[1]*x2**(-1)+coefficient_this2[2]+coefficient_this2[3]*x2+coefficient_this2[4]*x2**2+coefficient_this2[5]*x2**3+coefficient_this2[6]*x2**4)
+#         if molecule in fit_nasa:
+#             coefficient_nasa2=fit_nasa[molecule][1]
+#             Cp_fit_nasa2=R*(coefficient_nasa2[0]*x**(-2)+coefficient_nasa2[1]*x**(-1)+coefficient_nasa2[2]+coefficient_nasa2[3]*x+coefficient_nasa2[4]*x**2+coefficient_nasa2[5]*x**3+coefficient_nasa2[6]*x**4)
+#         x=np.hstack((x1,x2))
+#         Cp_fit_this=np.hstack(( Cp_fit_this1, Cp_fit_this2))
+
+#     plt.plot(x,Cp_fit_this,color="red",label="This work_Fit")    
+
+
+#     # plot specific heat using nasa glenn polynomials
+#     if molecule in fit_nasa:
+#         if Tmax<=1000:
+#             x_nasa=np.arange(298.15, Tmax, 0.01)
+#             coefficient_nasa=fit_nasa[molecule][0]
+#             Cp_fit_nasa=R*(coefficient_nasa[0]*x_nasa**(-2)+coefficient_nasa[1]*x_nasa**(-1)+coefficient_nasa[2]+coefficient_nasa[3]*x_nasa+coefficient_nasa[4]*x_nasa**2+coefficient_nasa[5]*x_nasa**3+coefficient_nasa[6]*x_nasa**4)
+#         else:
+#             x_nasa1=np.arange(298.15, 1000, 0.01)
+#             coefficient_nasa1=fit_nasa[molecule][0]
+#             Cp_fit_nasa1=R*(coefficient_nasa1[0]*x_nasa1**(-2)+coefficient_nasa1[1]*x_nasa1**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x_nasa1+coefficient_nasa1[4]*x_nasa1**2+coefficient_nasa1[5]*x_nasa1**3+coefficient_nasa1[6]*x_nasa1**4)
+#             x_nasa2=np.arange(1000, Tmax, 0.01)
+#             coefficient_nasa2=fit_nasa[molecule][1]
+#             Cp_fit_nasa2=R*(coefficient_nasa2[0]*x_nasa2**(-2)+coefficient_nasa2[1]*x_nasa2**(-1)+coefficient_nasa2[2]+coefficient_nasa2[3]*x_nasa2+coefficient_nasa2[4]*x_nasa2**2+coefficient_nasa2[5]*x_nasa2**3+coefficient_nasa2[6]*x_nasa2**4)
+#             x_nasa=np.hstack((x_nasa1,x_nasa2))
+#             Cp_fit_nasa=np.hstack(( Cp_fit_nasa1, Cp_fit_nasa2))
+
+#         plt.plot(x_nasa,Cp_fit_nasa,color="black",label="NASA Glenn")   
+
+#     storepath="pictures"
+#     storename=storepath+"/"+molecule
+
+
+
+#     plt.legend()
+#     plt.ylabel('$C_{p}$')
+#     plt.xlabel('T(K)')
+#     plt.title('Specific Heat Fit For '+molecule)
+#     plt.savefig(storename)
+#     plt.show()
+# %%
+# Draw the residuals versus fits plot
 for molecule in tqdm(Cp_dict):
     Tmax=Tmax_dict[molecule]
 
@@ -274,38 +358,22 @@ for molecule in tqdm(Cp_dict):
         if (float(t) <=Tmax) & (float(t) >=298):
             T.append(float(t))
             Cp.append(float(cp_Temp[t]))
-    plt.plot(T,Cp,color="violet",label="This work")
 
-    # plot JANAF specific heat
-    exist_JANAF=False
-    if molecule in Cp_JANAF:
-        exist_JANAF=True
-
-        J_temp=Cp_JANAF[molecule]
-        T_J=[]
-        Cp_J=[]
-        for t in J_temp:
-            if (float(t) <=Tmax) & (float(t) >=298):
-                T_J.append(float(t))
-                Cp_J.append(float(J_temp[t])) 
-        plt.plot(T_J,Cp_J,color="blue",label="JANAF")  
-
-    exist_nasa=False
 
     #plot specific heat in this work after fitting
     if Tmax<=1000:
-        x=np.arange(298.15, Tmax, 0.01)
+        x=np.arange(298.,Tmax+1., 1.)
         coefficient_this=fit_dictionary[molecule][0]
         Cp_fit_this=R*(coefficient_this[0]*x**(-2)+coefficient_this[1]*x**(-1)+coefficient_this[2]+coefficient_this[3]*x+coefficient_this[4]*x**2+coefficient_this[5]*x**3+coefficient_this[6]*x**4)
     
     else:
-        x1=np.arange(298.15, 1000, 0.01)
+        x1=np.arange(298.,1000.,1.)
         coefficient_this1=fit_dictionary[molecule][0]
         Cp_fit_this1=R*(coefficient_this1[0]*x1**(-2)+coefficient_this1[1]*x1**(-1)+coefficient_this1[2]+coefficient_this1[3]*x1+coefficient_this1[4]*x1**2+coefficient_this1[5]*x1**3+coefficient_this1[6]*x1**4)
         if molecule in fit_nasa:
             coefficient_nasa1=fit_nasa[molecule][0]
             Cp_fit_nasa1=R*(coefficient_nasa1[0]*x**(-2)+coefficient_nasa1[1]*x**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x+coefficient_nasa1[4]*x**2+coefficient_nasa1[5]*x**3+coefficient_nasa1[6]*x**4)
-        x2=np.arange(1000, Tmax, 0.01)
+        x2=np.arange(1000.,Tmax+1., 1.)
         coefficient_this2=fit_dictionary[molecule][1]
         Cp_fit_this2=R*(coefficient_this2[0]*x2**(-2)+coefficient_this2[1]*x2**(-1)+coefficient_this2[2]+coefficient_this2[3]*x2+coefficient_this2[4]*x2**2+coefficient_this2[5]*x2**3+coefficient_this2[6]*x2**4)
         if molecule in fit_nasa:
@@ -314,37 +382,18 @@ for molecule in tqdm(Cp_dict):
         x=np.hstack((x1,x2))
         Cp_fit_this=np.hstack(( Cp_fit_this1, Cp_fit_this2))
 
-    plt.plot(x,Cp_fit_this,color="red",label="This work_Fit")    
+    resudual= Cp - Cp_fit_this
 
+    plt.axhline(y=0.0,ls="-",c="gray", linewidth=0.3)
+    plt.scatter(Cp_fit_this,resudual)    
 
-    # plot specific heat using nasa glenn polynomials
-    if molecule in fit_nasa:
-        exist_nasa=True
-        if Tmax<=1000:
-            x_nasa=np.arange(298.15, Tmax, 0.01)
-            coefficient_nasa=fit_nasa[molecule][0]
-            Cp_fit_nasa=R*(coefficient_nasa[0]*x_nasa**(-2)+coefficient_nasa[1]*x_nasa**(-1)+coefficient_nasa[2]+coefficient_nasa[3]*x_nasa+coefficient_nasa[4]*x_nasa**2+coefficient_nasa[5]*x_nasa**3+coefficient_nasa[6]*x_nasa**4)
-        else:
-            x_nasa1=np.arange(298.15, 1000, 0.01)
-            coefficient_nasa1=fit_nasa[molecule][0]
-            Cp_fit_nasa1=R*(coefficient_nasa1[0]*x_nasa1**(-2)+coefficient_nasa1[1]*x_nasa1**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x_nasa1+coefficient_nasa1[4]*x_nasa1**2+coefficient_nasa1[5]*x_nasa1**3+coefficient_nasa1[6]*x_nasa1**4)
-            x_nasa2=np.arange(1000, Tmax, 0.01)
-            coefficient_nasa2=fit_nasa[molecule][1]
-            Cp_fit_nasa2=R*(coefficient_nasa2[0]*x_nasa2**(-2)+coefficient_nasa2[1]*x_nasa2**(-1)+coefficient_nasa2[2]+coefficient_nasa2[3]*x_nasa2+coefficient_nasa2[4]*x_nasa2**2+coefficient_nasa2[5]*x_nasa2**3+coefficient_nasa2[6]*x_nasa2**4)
-            x_nasa=np.hstack((x_nasa1,x_nasa2))
-            Cp_fit_nasa=np.hstack(( Cp_fit_nasa1, Cp_fit_nasa2))
-
-        plt.plot(x_nasa,Cp_fit_nasa,color="black",label="NASA Glenn")   
-
-    storepath="pictures"
+    storepath="residual_plot"
     storename=storepath+"/"+molecule
-
-
 
     plt.legend()
     plt.ylabel('$C_{p}$')
     plt.xlabel('T(K)')
-    plt.title('Specific Heat Fit For '+molecule)
+    plt.title('Residuals Versus Fits Plot For '+molecule)
     plt.savefig(storename)
     plt.show()
 # %%
