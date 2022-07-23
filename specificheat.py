@@ -384,16 +384,16 @@ for molecule in tqdm(Cp_dict):
 
     resudual= Cp - Cp_fit_this
 
-    plt.axhline(y=0.0,ls="-",c="gray", linewidth=0.3)
-    plt.scatter(Cp_fit_this,resudual)    
+    plt.axhline(y=0.0,c="red")
+    plt.scatter(x,resudual)    
 
     storepath="residual_plot"
     storename=storepath+"/"+molecule
 
     plt.legend()
-    plt.ylabel('$C_{p}$')
+    plt.ylabel('Residuals')
     plt.xlabel('T(K)')
-    plt.title('Residuals Versus Fits Plot For '+molecule)
+    plt.title('Residuals Plot For '+molecule)
     plt.savefig(storename)
     plt.show()
 # %%
