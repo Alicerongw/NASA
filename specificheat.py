@@ -232,6 +232,20 @@ for file in tqdm(files):
                     Cp_Capitelli[molecule]=dict()
                     Cp_Capitelli[molecule][t]=cp
 # %%
+# Generate a Capitelli dictionary 
+# Capitelli=np.loadtxt("Capitelli_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
+# Capitelli_specials=['CO','CO2','N2','NO','NO2','N2O','O2','O3']
+# Capitelli_fit=dict()
+# for i in range(len(Capitelli_specials)):
+#     n=i*3
+#     molecule=Capitelli_specials[i]
+#     coefficients_Ca = np.zeros([3, 7])
+#     for ii in range(3):
+#         coefficients_Ca[ii,]=Capitelli[n]
+#         n+=1
+#     if molecule not in Capitelli_fit:
+#         Capitelli_fit[molecule]=coefficients_Ca
+# %%
 # Read coefficients from original nasa glenn polynomials
 temprange_nasa=dict()
 fit_nasa=dict()
@@ -321,7 +335,7 @@ for molecule in tqdm(Cp_dict):
             if (float(t) <=Tmax) & (float(t) >=298):
                 T_Ca.append(float(t))
                 Cp_Ca.append(float(Ca_temp[t])) 
-        plt.scatter(T_Ca,Cp_Ca,color="aqua",label="Capitelli et.al")
+        plt.scatter(T_Ca,Cp_Ca,color="green",marker="x",label="Capitelli et.al")
 
     #plot specific heat in this work after fitting
     if Tmax<=1000:
@@ -347,6 +361,26 @@ for molecule in tqdm(Cp_dict):
 
     plt.plot(x,Cp_fit_this,color="red",label="This work_Fit")    
 
+    # if molecule in Capitelli_fit:
+    #     if Tmax<=1000:
+    #         x_Ca=np.arange(298.15, Tmax, 0.01)
+    #         coefficient_Ca=Capitelli_fit[molecule][0]
+    #         Cp_fit_Ca=R*(coefficient_Ca[0]*x_Ca**(-2)+coefficient_Ca[1]*x_Ca**(-1)+coefficient_Ca[2]+coefficient_Ca[3]*x_Ca+coefficient_Ca[4]*x_Ca**2+coefficient_Ca[5]*x_Ca**3+coefficient_Ca[6]*x_Ca**4)
+    #     else:
+    #         x_Ca1=np.arange(298.15, 1000, 0.01)
+    #         coefficient_Ca1=Capitelli_fit[molecule][0]
+    #         Cp_fit_Ca1=R*(coefficient_Ca1[0]*x_Ca1**(-2)+coefficient_Ca1[1]*x_Ca1**(-1)+coefficient_Ca1[2]+coefficient_Ca1[3]*x_Ca1+coefficient_Ca1[4]*x_Ca1**2+coefficient_Ca1[5]*x_Ca1**3+coefficient_Ca1[6]*x_Ca1**4)
+    #         x_Ca2=np.arange(1000, 3000, 0.01)
+    #         coefficient_Ca2=Capitelli_fit[molecule][1]
+    #         Cp_fit_Ca2=R*(coefficient_Ca2[0]*x_Ca2**(-2)+coefficient_Ca2[1]*x_Ca2**(-1)+coefficient_Ca2[2]+coefficient_Ca2[3]*x_Ca2+coefficient_Ca2[4]*x_Ca2**2+coefficient_Ca2[5]*x_Ca2**3+coefficient_Ca2[6]*x_Ca2**4)
+    #         x_Ca3=np.arange(3000, Tmax, 0.01)
+    #         coefficient_Ca3=Capitelli_fit[molecule][2]
+    #         Cp_fit_Ca3=R*(coefficient_Ca3[0]*x_Ca3**(-2)+coefficient_Ca3[1]*x_Ca3**(-1)+coefficient_Ca3[2]+coefficient_Ca3[3]*x_Ca3+coefficient_Ca3[4]*x_Ca3**2+coefficient_Ca3[5]*x_Ca3**3+coefficient_Ca3[6]*x_Ca3**4)
+    #         x_Ca=np.hstack((x_Ca1,x_Ca2,x_Ca3))
+    #         Cp_fit_Ca=np.hstack(( Cp_fit_Ca1, Cp_fit_Ca2,Cp_fit_Ca3))
+    #     print(molecule)
+    #     print(Cp_fit_Ca)
+    #     plt.plot(x_Ca,Cp_fit_Ca,color="aqua",label="Capitelli et.al")   
 
     # plot specific heat using nasa glenn polynomials
     if molecule in fit_nasa:
@@ -366,16 +400,18 @@ for molecule in tqdm(Cp_dict):
 
         plt.plot(x_nasa,Cp_fit_nasa,color="black",label="NASA Glenn")   
 
-    # storepath="pictures"
-    # storename=storepath+"/"+molecule
+    storepath="pictures"
+    storename=storepath+"/"+molecule
 
 
-
-    plt.legend()
+    if molecule=='N2O':
+        plt.legend(loc='lower left')
+    else:
+        plt.legend()
     plt.ylabel('$C_{p}$')
     plt.xlabel('T(K)')
     plt.title('Specific Heat Fit For '+molecule)
-    # plt.savefig(storename)
+    plt.savefig(storename)
     plt.show()
 # %%
 # # Draw the residuals versus fits plot
