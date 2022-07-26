@@ -96,8 +96,8 @@ for file in tqdm(files):
             for i in range(len(list_sorted)):
                 T_this.append(list_sorted[i][0])
                 Cp_this.append(list_sorted[i][1])
-            Cp_df=pd.DataFrame({'T(K)': T_this, 'Cp_Thiswork': Cp_this})
-            Cp_df.to_csv(storename,index=False)
+            # Cp_df=pd.DataFrame({'T(K)': T_this, 'Cp_Thiswork': Cp_this})
+            # Cp_df.to_csv(storename,index=False)
 
             # Store the maximum temperature in HITRAN database
             Tmax_this=T_this[-1]
@@ -187,8 +187,8 @@ for molecule in fit_dictionary:
         a7_list.append(coefficient_temp[i][6])
 
     
-fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
-fit_data.to_csv("coefficients.csv",index=False)
+# fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
+# fit_data.to_csv("coefficients.csv",index=False)
 
 
 # %%
@@ -311,6 +311,7 @@ with open('nasa9.dat', 'r') as nasa_file:
 # %%
 # Compare the specific heat results with existing sources
 for molecule in tqdm(Cp_dict):
+    plt.figure(figsize=(8,6))
     Tmax=Tmax_dict[molecule]
     Tmin=200.
     if molecule=='NO+':
@@ -324,6 +325,14 @@ for molecule in tqdm(Cp_dict):
             T.append(float(t))
             Cp.append(float(cp_Temp[t]))
     plt.plot(T,Cp,color="violet",label="This work")
+
+    if molecule=='H2O':
+        T_VT,Cp_VT=np.loadtxt("Other_Cp/H2O_Vidler_Tennyson.txt",usecols=(0,1),unpack=True) 
+        T_Harris,Cp_Harris=np.loadtxt("Other_Cp/H2O_Harris.txt",usecols=(0,1),unpack=True) 
+        T_Furtenbacher,Cp_Furtenbacher=np.loadtxt("Other_Cp/H2O_Furtenbacher.txt",usecols=(0,1),unpack=True) 
+        plt.plot(T_VT,Cp_VT,color='seagreen',label="Vidler & Tennyson")
+        plt.plot(T_Harris,Cp_Harris,color='aqua',label="Harris et.al")
+        plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
 
     # plot JANAF specific heat
     if molecule in Cp_JANAF:
@@ -409,7 +418,9 @@ for molecule in tqdm(Cp_dict):
             x_nasa=np.hstack((x_nasa1,x_nasa2))
             Cp_fit_nasa=np.hstack(( Cp_fit_nasa1, Cp_fit_nasa2))
 
-        plt.plot(x_nasa,Cp_fit_nasa,color="black",label="NASA Glenn")   
+        plt.plot(x_nasa,Cp_fit_nasa,color="black",label="NASA Glenn") 
+
+
 
     storepath="pictures"
     storename=storepath+"/"+molecule
@@ -419,6 +430,8 @@ for molecule in tqdm(Cp_dict):
         plt.legend(loc='lower left')
     else:
         plt.legend()
+
+
     plt.ylabel('$C_{p}$')
     plt.xlabel('T(K)')
     plt.title('Specific Heat Fit For '+molecule)
@@ -470,6 +483,7 @@ for molecule in tqdm(Cp_dict):
 
     storepath="residual_plot"
     storename=storepath+"/"+molecule
+
 
     plt.legend()
     plt.ylabel('Residuals')
