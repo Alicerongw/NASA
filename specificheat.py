@@ -7,7 +7,11 @@ import pandas as pd
 import json
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
+from scipy.optimize import curve_fit
 # %%
+R=8.314 # Universal gas constant
+def objective(x, a1,a2,a3,a4,a5,a6,a7):
+    return R*(a1*x**(-2)+a2*x**(-1)+a3+a4*x+a5*x**2+a6*x**3+a7*x**4)
 # Add the split points for molecules in HITRAN  
 split_list=[['CH4'],['H2O2'],['CLO'],['HCN','CO','HF','HI','N2','NH3','OCS','OH','PH3','C2H2','C2N2','C2H4','CH3CL','CH3F','OH','O2'],['SF6'],['CS','HO2','NO','NO+','SO'],['H2','HBr','HCL'],['SO3'],['C2H6'],['C4H2']]
 split=[[200,500,1300,1500],[200,1500],[200,4000],[200,1000],[200,1000,2000,3000,4000],[200,1000,4000],[200,1000,5000],[200,500,650],[200,1000,2000,3000],[200,1000,2000]]
@@ -16,6 +20,8 @@ for i in range(len(split_list)):
     for j in range(len(split_list[i])):
         if split_list[i][j] not in split_dict:
             split_dict[split_list[i][j]]=split[i]
+#%%
+
 # %%
 # Calculate specific heat
 Cp_dict=dict()
@@ -79,7 +85,7 @@ for file in tqdm(files):
                 # Calculate specific heat
                 Q1=x*dQ
                 Q2=(x**2)*ddQ+2*Q1
-                R=8.314 # Universal gas constant
+                # R=8.314 # Universal gas constant
                 Cp_temp=R*((Q2/y)-(Q1/y)**2)+(5/2)*R
                 for i in range(len(x)):
                     t=float(x[i])    
@@ -124,12 +130,19 @@ for file in tqdm(files):
             coefficients = np.zeros([temp_intervals, 7])
             for ii in range(len(fit_Tinterval)):
                 x=np.array(fit_Tinterval[ii])
-                Cp_interval=np.array(fit_Cpinterval[ii])
-                y=(Cp_interval/R)*x*x
-                z1 = np.polyfit(x,y,6) 
-                p1= np.poly1d(z1)
+                y=np.array(fit_Cpinterval[ii])
+                popt, _ = curve_fit(objective, x, y)
                 for i in range(7):
-                    coefficients[ii,i]=p1[i]
+                    coefficients[ii,i]=popt[i]
+            # coefficients = np.zeros([temp_intervals, 7])
+            # for ii in range(len(fit_Tinterval)):
+            #     x=np.array(fit_Tinterval[ii])
+            #     Cp_interval=np.array(fit_Cpinterval[ii])
+            #     y=(Cp_interval/R)*x*x
+            #     z1 = np.polyfit(x,y,6) 
+            #     p1= np.poly1d(z1)
+            #     for i in range(7):
+            #         coefficients[ii,i]=p1[i]
             fit_dictionary[molecule]=coefficients
 
 
@@ -187,8 +200,8 @@ for molecule in fit_dictionary:
         a7_list.append(coefficient_temp[i][6])
 
     
-# fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
-# fit_data.to_csv("coefficients.csv",index=False)
+fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
+fit_data.to_csv("coefficients.csv",index=False)
 
 
 # %%
@@ -479,13 +492,12 @@ for molecule in tqdm(Cp_dict):
     resudual= Cp - Cp_fit_this
 
     plt.axhline(y=0.0,c="red")
-    plt.scatter(x,resudual)    
+    plt.plot(x,resudual)    
 
     storepath="residual_plot"
     storename=storepath+"/"+molecule
 
 
-    plt.legend()
     plt.ylabel('Residuals')
     plt.xlabel('T(K)')
     plt.title('Residuals Plot For '+molecule)
