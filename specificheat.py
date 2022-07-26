@@ -200,8 +200,8 @@ for molecule in fit_dictionary:
         a7_list.append(coefficient_temp[i][6])
 
     
-fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
-fit_data.to_csv("coefficients.csv",index=False)
+# fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
+# fit_data.to_csv("coefficients.csv",index=False)
 
 
 # %%
@@ -448,10 +448,11 @@ for molecule in tqdm(Cp_dict):
     plt.ylabel('$C_{p}$')
     plt.xlabel('T(K)')
     plt.title('Specific Heat Fit For '+molecule)
-    plt.savefig(storename)
+    # plt.savefig(storename)
     plt.show()
 # %%
 # Draw the residuals versus fits plot
+residual_dict=dict()
 for molecule in tqdm(Cp_dict):
     Tmax=Tmax_dict[molecule]
     Tmin=200.
@@ -477,22 +478,22 @@ for molecule in tqdm(Cp_dict):
         x1=np.arange(Tmin,1000.,1.)
         coefficient_this1=fit_dictionary[molecule][0]
         Cp_fit_this1=R*(coefficient_this1[0]*x1**(-2)+coefficient_this1[1]*x1**(-1)+coefficient_this1[2]+coefficient_this1[3]*x1+coefficient_this1[4]*x1**2+coefficient_this1[5]*x1**3+coefficient_this1[6]*x1**4)
-        if molecule in fit_nasa:
-            coefficient_nasa1=fit_nasa[molecule][0]
-            Cp_fit_nasa1=R*(coefficient_nasa1[0]*x**(-2)+coefficient_nasa1[1]*x**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x+coefficient_nasa1[4]*x**2+coefficient_nasa1[5]*x**3+coefficient_nasa1[6]*x**4)
         x2=np.arange(1000.,Tmax+1., 1.)
         coefficient_this2=fit_dictionary[molecule][1]
         Cp_fit_this2=R*(coefficient_this2[0]*x2**(-2)+coefficient_this2[1]*x2**(-1)+coefficient_this2[2]+coefficient_this2[3]*x2+coefficient_this2[4]*x2**2+coefficient_this2[5]*x2**3+coefficient_this2[6]*x2**4)
-        if molecule in fit_nasa:
-            coefficient_nasa2=fit_nasa[molecule][1]
-            Cp_fit_nasa2=R*(coefficient_nasa2[0]*x**(-2)+coefficient_nasa2[1]*x**(-1)+coefficient_nasa2[2]+coefficient_nasa2[3]*x+coefficient_nasa2[4]*x**2+coefficient_nasa2[5]*x**3+coefficient_nasa2[6]*x**4)
         x=np.hstack((x1,x2))
         Cp_fit_this=np.hstack(( Cp_fit_this1, Cp_fit_this2))
 
-    resudual= Cp - Cp_fit_this
+    residual= Cp - Cp_fit_this
+    array_temp=np.zeros(3)
+    array_temp[0]=np.min(residual)
+    array_temp[1]=np.max(residual)
+    array_temp[2]=np.mean(residual)
 
+    if molecule not in residual_dict:
+        residual_dict[molecule]=array_temp
     plt.axhline(y=0.0,c="red")
-    plt.plot(x,resudual)    
+    plt.plot(x,residual)    
 
     storepath="residual_plot"
     storename=storepath+"/"+molecule
@@ -501,6 +502,12 @@ for molecule in tqdm(Cp_dict):
     plt.ylabel('Residuals')
     plt.xlabel('T(K)')
     plt.title('Residuals Plot For '+molecule)
-    plt.savefig(storename)
+    # plt.savefig(storename)
     plt.show()
+# %%
+residual_dict
+# %%
+residual_dict['CO']
+# %%
+residual_dict['H2O']
 # %%
