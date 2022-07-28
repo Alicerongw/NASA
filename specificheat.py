@@ -350,6 +350,14 @@ for molecule in tqdm(Cp_dict):
         plt.plot(T_Harris,Cp_Harris,color='aqua',label="Harris et.al")
         plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
 
+    if molecule=='NH3':
+        T_SS,Cp_SS=np.loadtxt("Other_Cp/NH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
+        plt.plot(T_SS,Cp_SS,color='deepskyblue',label="C. Sousa-Silva et al.")
+
+    if molecule=='PH3':
+        T_SS,Cp_SS=np.loadtxt("Other_Cp/PH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
+        plt.plot(T_SS,Cp_SS,color='deepskyblue',label="C. Sousa-Silva et al.")
+
     # plot JANAF specific heat
     if molecule in Cp_JANAF:
 
@@ -414,8 +422,8 @@ for molecule in tqdm(Cp_dict):
             Cp_fit_Ca3=R*(coefficient_Ca3[0]*x_Ca3**(-2)+coefficient_Ca3[1]*x_Ca3**(-1)+coefficient_Ca3[2]+coefficient_Ca3[3]*x_Ca3+coefficient_Ca3[4]*x_Ca3**2+coefficient_Ca3[5]*x_Ca3**3+coefficient_Ca3[6]*x_Ca3**4)
             x_Ca=np.hstack((x_Ca1,x_Ca2,x_Ca3))
             Cp_fit_Ca=np.hstack(( Cp_fit_Ca1, Cp_fit_Ca2,Cp_fit_Ca3))
-        print(molecule)
-        print(Cp_fit_Ca)
+        # print(molecule)
+        # print(Cp_fit_Ca)
         plt.plot(x_Ca,Cp_fit_Ca,color="deeppink",label="Capitelli et.al")   
 
     # plot specific heat using nasa glenn polynomials
@@ -823,7 +831,7 @@ for i in range(len(T_J_this)):
         Cp_J_that.append(float(J_temp[T_J[i]]))
     
 di_J=((np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
-plt.plot(T_J_this,di_J,color="blue",label="JANAF")  
+plt.plot(T_J_this,di_J,color="green",label="JANAF")  
 
 
 # #plot specific heat in this work after fitting
