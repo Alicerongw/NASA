@@ -206,7 +206,7 @@ for molecule in fit_dictionary:
 
 # %%
 # Generate a JANAF dictionary 
-path = "JANAF"
+path = "Other_Cp/JANAF"
 files= os.listdir(path) 
 Cp_JANAF=dict()
 for file in tqdm(files): 
@@ -255,72 +255,127 @@ for file in tqdm(files):
                     Cp_Capitelli[molecule][t]=cp
 # %%
 # Generate a Capitelli dictionary 
-Capitelli=np.loadtxt("Capitelli_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
-Capitelli_specials=['CO','CO2','N2','NO','NO2','N2O','O2','O3']
-Capitelli_fit=dict()
+Capitelli=np.loadtxt("Other_Cp/Capitelli_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
+Capitelli_specials=['CO','CO2','N2','NO','NO+','NO2','N2O','O2','O3']
+coe_Capitelli=dict()
 for i in range(len(Capitelli_specials)):
     n=i*3
-    molecule=Capitelli_specials[i]
+    species=Capitelli_specials[i]
     coefficients_Ca = np.zeros([3, 7])
     for ii in range(3):
         for j in range(7):
             Capitelli[n][j]=Capitelli[n][j]*10**((-5)*(j-2))
         coefficients_Ca[ii,]=Capitelli[n]
         n+=1
-    if molecule not in Capitelli_fit:
-        Capitelli_fit[molecule]=coefficients_Ca
+    if species not in coe_Capitelli:
+        coe_Capitelli[species]=coefficients_Ca
+# Capitelli=np.loadtxt("Capitelli_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
+# Capitelli_specials=['CO','CO2','N2','NO','NO2','N2O','O2','O3']
+# Capitelli_fit=dict()
+# for i in range(len(Capitelli_specials)):
+#     n=i*3
+#     molecule=Capitelli_specials[i]
+#     coefficients_Ca = np.zeros([3, 7])
+#     for ii in range(3):
+#         for j in range(7):
+#             Capitelli[n][j]=Capitelli[n][j]*10**((-5)*(j-2))
+#         coefficients_Ca[ii,]=Capitelli[n]
+#         n+=1
+#     if molecule not in Capitelli_fit:
+#         Capitelli_fit[molecule]=coefficients_Ca
 #%%
 # %%
 # Read coefficients from original nasa glenn polynomials
-temprange_nasa=dict()
-fit_nasa=dict()
-with open('nasa9.dat', 'r') as nasa_file:
-    keep_searching = True
+# temprange_nasa=dict()
+# fit_nasa=dict()
+# with open('nasa9.dat', 'r') as nasa_file:
+#     keep_searching = True
 
-    temp_range = None
-    temp_intervals = None
-    coefficients = None
+#     temp_range = None
+#     temp_intervals = None
+#     coefficients = None
     
 
 
-    while keep_searching:
-        line = nasa_file.readline()
+#     while keep_searching:
+#         line = nasa_file.readline()
         
-        if line=='':
-            keep_searching = False
+#         if line=='':
+#             keep_searching = False
             
 
 
-        elif (line.split()[0] in Cp_dict) or (line.split()[0]=='C2H2,acetylene'):
+#         elif (line.split()[0] in Cp_dict) or (line.split()[0]=='C2H2,acetylene'):
+#             print(line.split()[0])
+#             if line.split()[0]=='C2H2,acetylene':
+#                 species='C2H2'
+#             else:
+#                 species=line.split()[0]
+
+#             # Get reference for the species data:
+#             data = nasa_file.readline()
+#             temp_intervals = int(data[0:2])
+
+#             temp_range = np.zeros([temp_intervals, 2])
+#             coefficients = np.zeros([temp_intervals, 7])
+#             integration_cts = np.zeros([temp_intervals, 2])
+            
+#             for ii in range(temp_intervals):
+#                 temprange_data = nasa_file.readline()
+#                 coeffs_line_1 = nasa_file.readline()
+#                 coeffs_line_2 = nasa_file.readline()
+
+#                 temp_range[ii][:]=[1,2]
+#                 temp_range[ii,:] = [float(temprange_data[0:11]), float(temprange_data[11:22])]
+#                 coefficients[ii,:] = [float(coeffs_line_1[0:16].replace('D','E')), float(coeffs_line_1[16:32].replace('D','E')),
+#                                 float(coeffs_line_1[32:48].replace('D','E')), float(coeffs_line_1[48:64].replace('D','E')),
+#                                 float(coeffs_line_1[64:80].replace('D','E')), float(coeffs_line_2[0:16].replace('D','E')),
+#                                 float(coeffs_line_2[16:32].replace('D','E'))]
+            
+#             temprange_nasa[species]=temp_range
+#             fit_nasa[species]=coefficients
+                       
+#         else:
+#             pass
+name_nasa=['C2H2,acetylene','CH3CL','CLO','COCL2','HCL','HOCL']
+name_this=['C2H2','CH3Cl','ClO','COCl2','HCl','HOCl']
+
+coe_nasa=dict()
+with open('Other_Cp/nasa9.dat', 'r') as file:
+    stop_index = True
+
+    while stop_index:
+        line = file.readline()
+        
+        if line=='':
+            stop_index = False
+            
+        elif (line.split()[0] in Cp_dict) or (line.split()[0] in name_nasa):
             print(line.split()[0])
-            if line.split()[0]=='C2H2,acetylene':
-                species='C2H2'
+            if line.split()[0] in name_nasa:
+                name_index = name_nasa.index(line.split()[0])
+                species=name_this[name_index]
             else:
                 species=line.split()[0]
 
             # Get reference for the species data:
-            data = nasa_file.readline()
-            temp_intervals = int(data[0:2])
+            nasa_data = file.readline()
+            num_intervals = int(nasa_data[0:2])
 
-            temp_range = np.zeros([temp_intervals, 2])
-            coefficients = np.zeros([temp_intervals, 7])
-            integration_cts = np.zeros([temp_intervals, 2])
+            coefficients = np.zeros([num_intervals, 7])
             
-            for ii in range(temp_intervals):
-                temprange_data = nasa_file.readline()
-                coeffs_line_1 = nasa_file.readline()
-                coeffs_line_2 = nasa_file.readline()
+            for j in range(num_intervals):
+                order = file.readline()
+                coe_line1 = file.readline()
+                coe_line2 = file.readline()
 
-                temp_range[ii][:]=[1,2]
-                temp_range[ii,:] = [float(temprange_data[0:11]), float(temprange_data[11:22])]
-                coefficients[ii,:] = [float(coeffs_line_1[0:16].replace('D','E')), float(coeffs_line_1[16:32].replace('D','E')),
-                                float(coeffs_line_1[32:48].replace('D','E')), float(coeffs_line_1[48:64].replace('D','E')),
-                                float(coeffs_line_1[64:80].replace('D','E')), float(coeffs_line_2[0:16].replace('D','E')),
-                                float(coeffs_line_2[16:32].replace('D','E'))]
+                coefficients[j,:] = [float(coe_line1[0:16].replace('D','E')), float(coe_line1[16:32].replace('D','E')),
+                                float(coe_line1[32:48].replace('D','E')), float(coe_line1[48:64].replace('D','E')),
+                                float(coe_line1[64:80].replace('D','E')), float(coe_line2[0:16].replace('D','E')),
+                                float(coe_line2[16:32].replace('D','E'))]
             
-            temprange_nasa[species]=temp_range
-            fit_nasa[species]=coefficients
-                       
+            coe_nasa[species]=coefficients
+                    
         else:
             pass
 
@@ -911,4 +966,487 @@ plt.xlabel('T(K)')
 plt.title('Specific Heat Difference For '+molecule)
 plt.savefig(storename)
 plt.show()
+# %%
+molecule='H2O'
+cp_Temp=Cp_dict[molecule]
+T_Furtenbacher,Cp_Furtenbacher=np.loadtxt("Other_Cp/H2O_Furtenbacher.txt",usecols=(0,1),unpack=True) 
+Cp_Furtenbacher_this=[]
+for i in range(len(T_Furtenbacher)):
+    Cp_Furtenbacher_this.append(float(cp_Temp[T_Furtenbacher[i]]))
+di_abso=np.abs((Cp_Furtenbacher-Cp_Furtenbacher_this))
+di_Furtenbacher=(np.abs((Cp_Furtenbacher-Cp_Furtenbacher_this))/Cp_Furtenbacher_this)*100
+# %%
+for i in range(len(T_Furtenbacher)):
+    print("T")
+    print(T_Furtenbacher[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_Furtenbacher[i])
+# %%
+molecule='CS'
+cp_Temp=Cp_dict[molecule]
+J_temp=Cp_JANAF[molecule]
+T_J=[]
+Cp_J=[]
+for t in J_temp:
+    if (float(t) <=Tmax) & (float(t) >=200):
+        T_J.append(float(t))
+        Cp_J.append(float(J_temp[t])) 
+
+T_J_this=[]
+Cp_J_this=[]
+Cp_J_that=[]
+for i in range(len(T_J)):
+    if T_J[i] in cp_Temp:
+        T_J_this.append(float(T_J[i]))
+        Cp_J_this.append(float(cp_Temp[T_J[i]]))
+        Cp_J_that.append(float(J_temp[T_J[i]]))
+di_abso=np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))   
+di_J=(np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
+
+# %%
+
+for i in range(len(T_J_this)):
+    print("T")
+    print(T_J_this[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_J[i])
+# %%
+molecule='ClO'
+cp_Temp=Cp_dict[molecule]
+Cp_nasa_this=[]
+x_nasa1=np.arange(200., 1001., 100.)
+coefficient_nasa1=coe_nasa[molecule][0]
+Cp_fit_nasa1=R*(coefficient_nasa1[0]*x_nasa1**(-2)+coefficient_nasa1[1]*x_nasa1**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x_nasa1+coefficient_nasa1[4]*x_nasa1**2+coefficient_nasa1[5]*x_nasa1**3+coefficient_nasa1[6]*x_nasa1**4)
+for i in range(len(x_nasa1)):
+    Cp_nasa_this.append(float(cp_Temp[x_nasa1[i]]))
+di_abso=np.abs((Cp_fit_nasa1-Cp_nasa_this))
+di_nasa=(np.abs((Cp_fit_nasa1-Cp_nasa_this))/Cp_nasa_this)*100
+# %%
+for i in range(len(x_nasa1)):
+    print("T")
+    print(x_nasa1[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
+# %%
+def get_polynomial_results(coefficients,x):
+    Cp=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
+    return Cp
+molecule='N2O'
+cp_Temp=Cp_dict[molecule]
+x_Ca2=np.arange(1000., 2001., 100.)
+coefficient_Ca2=coe_Capitelli[species][1]
+Cp_fit_Ca2=get_polynomial_results(coefficient_Ca2,x_Ca2)
+Cp_Ca_this=[]
+
+for i in range(len(x_Ca2)):
+    Cp_Ca_this.append(float(cp_Temp[x_Ca2[i]]))
+di_abso=np.abs((Cp_fit_Ca2-Cp_Ca_this))
+di_nasa=(np.abs((Cp_fit_Ca2-Cp_Ca_this))/Cp_Ca_this)*100
+
+# %%
+for i in range(len(x_nasa1)):
+    print("T")
+    print(x_Ca2[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
+# %%
+molecule='CH3F'
+cp_Temp=Cp_dict[molecule]
+J_temp=Cp_JANAF[molecule]
+T_J=[]
+Cp_J=[]
+for t in J_temp:
+    if (float(t) <=Tmax) & (float(t) >=200):
+        T_J.append(float(t))
+        Cp_J.append(float(J_temp[t])) 
+
+T_J_this=[]
+Cp_J_this=[]
+Cp_J_that=[]
+for i in range(len(T_J)):
+    if T_J[i] in cp_Temp:
+        T_J_this.append(float(T_J[i]))
+        Cp_J_this.append(float(cp_Temp[T_J[i]]))
+        Cp_J_that.append(float(J_temp[T_J[i]]))
+di_abso=np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))   
+di_J=(np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
+# %%
+for i in range(len(T_J_this)):
+    print("T")
+    print(T_J_this[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_J[i])
+# %%
+molecule='HCOOH'
+cp_Temp=Cp_dict[molecule]
+Cp_nasa_this=[]
+x_nasa1=np.arange(200., 1001., 100.)
+coefficient_nasa1=coe_nasa[molecule][0]
+Cp_fit_nasa1=R*(coefficient_nasa1[0]*x_nasa1**(-2)+coefficient_nasa1[1]*x_nasa1**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x_nasa1+coefficient_nasa1[4]*x_nasa1**2+coefficient_nasa1[5]*x_nasa1**3+coefficient_nasa1[6]*x_nasa1**4)
+for i in range(len(x_nasa1)):
+    Cp_nasa_this.append(float(cp_Temp[x_nasa1[i]]))
+di_abso=np.abs((Cp_fit_nasa1-Cp_nasa_this))
+di_nasa=(np.abs((Cp_fit_nasa1-Cp_nasa_this))/Cp_nasa_this)*100
+# %%
+for i in range(len(x_nasa1)):
+    print("T")
+    print(x_nasa1[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
+# %%
+molecule='HCOOH'
+cp_Temp=Cp_dict[molecule]
+Cp_nasa_this=[]
+x_nasa1=np.arange(1000., 5001., 100.)
+coefficient_nasa1=coe_nasa[molecule][1]
+Cp_fit_nasa1=R*(coefficient_nasa1[0]*x_nasa1**(-2)+coefficient_nasa1[1]*x_nasa1**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x_nasa1+coefficient_nasa1[4]*x_nasa1**2+coefficient_nasa1[5]*x_nasa1**3+coefficient_nasa1[6]*x_nasa1**4)
+for i in range(len(x_nasa1)):
+    Cp_nasa_this.append(float(cp_Temp[x_nasa1[i]]))
+di_abso=np.abs((Cp_fit_nasa1-Cp_nasa_this))
+di_nasa=(np.abs((Cp_fit_nasa1-Cp_nasa_this))/Cp_nasa_this)*100
+# %%
+for i in range(len(x_nasa1)):
+    print("T")
+    print(x_nasa1[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
+# %%
+molecule='NO'
+cp_Temp=Cp_dict[molecule]
+J_temp=Cp_JANAF[molecule]
+T_J=[]
+Cp_J=[]
+for t in J_temp:
+    if (float(t) <=Tmax) & (float(t) >=200):
+        T_J.append(float(t))
+        Cp_J.append(float(J_temp[t])) 
+
+T_J_this=[]
+Cp_J_this=[]
+Cp_J_that=[]
+for i in range(len(T_J)):
+    if T_J[i] in cp_Temp:
+        T_J_this.append(float(T_J[i]))
+        Cp_J_this.append(float(cp_Temp[T_J[i]]))
+        Cp_J_that.append(float(J_temp[T_J[i]]))
+di_abso=np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))   
+di_J=(np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
+# %%
+for i in range(len(T_J_this)):
+    print("T")
+    print(T_J_this[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_J[i])
+# %%
+molecule='H2S'
+cp_Temp=Cp_dict[molecule]
+J_temp=Cp_JANAF[molecule]
+T_J=[]
+Cp_J=[]
+for t in J_temp:
+    if (float(t) <=Tmax) & (float(t) >=200):
+        T_J.append(float(t))
+        Cp_J.append(float(J_temp[t])) 
+
+T_J_this=[]
+Cp_J_this=[]
+Cp_J_that=[]
+for i in range(len(T_J)):
+    if T_J[i] in cp_Temp:
+        T_J_this.append(float(T_J[i]))
+        Cp_J_this.append(float(cp_Temp[T_J[i]]))
+        Cp_J_that.append(float(J_temp[T_J[i]]))
+di_abso=np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))   
+di_J=(np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
+# %%
+for i in range(len(T_J_this)):
+    print("T")
+    print(T_J_this[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_J[i])
+# %%
+molecule='H2O2'
+cp_Temp=Cp_dict[molecule]
+Cp_nasa_this=[]
+x_nasa1=np.arange(200., 1001., 100.)
+coefficient_nasa1=coe_nasa[molecule][0]
+Cp_fit_nasa1=R*(coefficient_nasa1[0]*x_nasa1**(-2)+coefficient_nasa1[1]*x_nasa1**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x_nasa1+coefficient_nasa1[4]*x_nasa1**2+coefficient_nasa1[5]*x_nasa1**3+coefficient_nasa1[6]*x_nasa1**4)
+for i in range(len(x_nasa1)):
+    Cp_nasa_this.append(float(cp_Temp[x_nasa1[i]]))
+di_abso=np.abs((Cp_fit_nasa1-Cp_nasa_this))
+di_nasa=(np.abs((Cp_fit_nasa1-Cp_nasa_this))/Cp_nasa_this)*100
+# %%
+for i in range(len(x_nasa1)):
+    print("T")
+    print(x_nasa1[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
+# %%
+molecule='SO'
+cp_Temp=Cp_dict[molecule]
+J_temp=Cp_JANAF[molecule]
+T_J=[]
+Cp_J=[]
+for t in J_temp:
+    if (float(t) <=Tmax) & (float(t) >=200):
+        T_J.append(float(t))
+        Cp_J.append(float(J_temp[t])) 
+
+T_J_this=[]
+Cp_J_this=[]
+Cp_J_that=[]
+for i in range(len(T_J)):
+    if T_J[i] in cp_Temp:
+        T_J_this.append(float(T_J[i]))
+        Cp_J_this.append(float(cp_Temp[T_J[i]]))
+        Cp_J_that.append(float(J_temp[T_J[i]]))
+di_abso=np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))   
+di_J=(np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
+# %%
+for i in range(len(T_J_this)):
+    print("T")
+    print(T_J_this[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_J[i])
+# %%
+def get_polynomial_results(coefficients,x):
+    Cp=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
+    return Cp
+molecule='N2'
+cp_Temp=Cp_dict[molecule]
+x_Ca2=np.arange(1500., 2501., 100.)
+coefficient_Ca2=coe_Capitelli[molecule][1]
+Cp_fit_Ca2=get_polynomial_results(coefficient_Ca2,x_Ca2)
+Cp_Ca_this=[]
+
+for i in range(len(x_Ca2)):
+    Cp_Ca_this.append(float(cp_Temp[x_Ca2[i]]))
+di_abso=np.abs((Cp_fit_Ca2-Cp_Ca_this))
+di_nasa=(np.abs((Cp_fit_Ca2-Cp_Ca_this))/Cp_Ca_this)*100
+
+# %%
+for i in range(len(x_Ca2)):
+    print("T")
+    print(x_Ca2[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
+# %%
+coefficient_Ca2
+# %%
+molecule='SO3'
+cp_Temp=Cp_dict[molecule]
+J_temp=Cp_JANAF[molecule]
+T_J=[]
+Cp_J=[]
+for t in J_temp:
+    if (float(t) <=Tmax) & (float(t) >=200):
+        T_J.append(float(t))
+        Cp_J.append(float(J_temp[t])) 
+
+T_J_this=[]
+Cp_J_this=[]
+Cp_J_that=[]
+for i in range(len(T_J)):
+    if T_J[i] in cp_Temp:
+        T_J_this.append(float(T_J[i]))
+        Cp_J_this.append(float(cp_Temp[T_J[i]]))
+        Cp_J_that.append(float(J_temp[T_J[i]]))
+di_abso=np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))   
+di_J=(np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
+# %%
+for i in range(len(T_J_this)):
+    print("T")
+    print(T_J_this[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_J[i])
+# %%
+molecule='O2'
+cp_Temp=Cp_dict[molecule]
+J_temp=Cp_JANAF[molecule]
+T_J=[]
+Cp_J=[]
+for t in J_temp:
+    if (float(t) <=Tmax) & (float(t) >=200):
+        T_J.append(float(t))
+        Cp_J.append(float(J_temp[t])) 
+
+T_J_this=[]
+Cp_J_this=[]
+Cp_J_that=[]
+for i in range(len(T_J)):
+    if T_J[i] in cp_Temp:
+        T_J_this.append(float(T_J[i]))
+        Cp_J_this.append(float(cp_Temp[T_J[i]]))
+        Cp_J_that.append(float(J_temp[T_J[i]]))
+di_abso=np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))   
+di_J=(np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
+# %%
+for i in range(len(T_J_this)):
+    print("T")
+    print(T_J_this[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_J[i])
+# %%
+molecule='HI'
+cp_Temp=Cp_dict[molecule]
+J_temp=Cp_JANAF[molecule]
+T_J=[]
+Cp_J=[]
+for t in J_temp:
+    if (float(t) <=Tmax) & (float(t) >=200):
+        T_J.append(float(t))
+        Cp_J.append(float(J_temp[t])) 
+
+T_J_this=[]
+Cp_J_this=[]
+Cp_J_that=[]
+for i in range(len(T_J)):
+    if T_J[i] in cp_Temp:
+        T_J_this.append(float(T_J[i]))
+        Cp_J_this.append(float(cp_Temp[T_J[i]]))
+        Cp_J_that.append(float(J_temp[T_J[i]]))
+di_abso=np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))   
+di_J=(np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
+# %%
+for i in range(len(T_J_this)):
+    print("T")
+    print(T_J_this[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_J[i])
+# %%
+molecule='HO2'
+cp_Temp=Cp_dict[molecule]
+J_temp=Cp_JANAF[molecule]
+T_J=[]
+Cp_J=[]
+for t in J_temp:
+    if (float(t) <=Tmax) & (float(t) >=200):
+        T_J.append(float(t))
+        Cp_J.append(float(J_temp[t])) 
+
+T_J_this=[]
+Cp_J_this=[]
+Cp_J_that=[]
+for i in range(len(T_J)):
+    if T_J[i] in cp_Temp:
+        T_J_this.append(float(T_J[i]))
+        Cp_J_this.append(float(cp_Temp[T_J[i]]))
+        Cp_J_that.append(float(J_temp[T_J[i]]))
+di_abso=np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))   
+di_J=(np.abs(np.array(Cp_J_that)-np.array(Cp_J_this))/np.array(Cp_J_this))*100
+# %%
+for i in range(len(T_J_this)):
+    print("T")
+    print(T_J_this[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_J[i])
+# %%
+def get_polynomial_results(coefficients,x):
+    Cp=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
+    return Cp
+molecule='CO2'
+cp_Temp=Cp_dict[molecule]
+x_Ca2=np.arange(2000., 3001., 100.)
+coefficient_Ca2=coe_Capitelli[molecule][1]
+Cp_fit_Ca2=get_polynomial_results(coefficient_Ca2,x_Ca2)
+Cp_Ca_this=[]
+
+for i in range(len(x_Ca2)):
+    Cp_Ca_this.append(float(cp_Temp[x_Ca2[i]]))
+di_abso=np.abs((Cp_fit_Ca2-Cp_Ca_this))
+di_nasa=(np.abs((Cp_fit_Ca2-Cp_Ca_this))/Cp_Ca_this)*100
+
+# %%
+for i in range(len(x_Ca2)):
+    print("T")
+    print(x_Ca2[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
+# %%
+molecule='C2H2'
+cp_Temp=Cp_dict[molecule]
+Cp_nasa_this=[]
+x_nasa1=np.arange(1000., 2001., 100.)
+coefficient_nasa1=coe_nasa[molecule][1]
+Cp_fit_nasa1=R*(coefficient_nasa1[0]*x_nasa1**(-2)+coefficient_nasa1[1]*x_nasa1**(-1)+coefficient_nasa1[2]+coefficient_nasa1[3]*x_nasa1+coefficient_nasa1[4]*x_nasa1**2+coefficient_nasa1[5]*x_nasa1**3+coefficient_nasa1[6]*x_nasa1**4)
+for i in range(len(x_nasa1)):
+    Cp_nasa_this.append(float(cp_Temp[x_nasa1[i]]))
+di_abso=np.abs((Cp_fit_nasa1-Cp_nasa_this))
+di_nasa=(np.abs((Cp_fit_nasa1-Cp_nasa_this))/Cp_nasa_this)*100
+# %%
+for i in range(len(x_nasa1)):
+    print("T")
+    print(x_nasa1[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
+# %%
+molecule='PH3'
+cp_Temp=Cp_dict[molecule]
+T_SS,Cp_SS=np.loadtxt("Other_Cp/PH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
+Cp_SS_this=[]
+for i in range(len(T_SS)):
+    Cp_SS_this.append(float(cp_Temp[T_SS[i]]))
+di_abso=np.abs((Cp_SS-Cp_SS_this))
+di_nasa=(np.abs((Cp_SS-Cp_SS_this))/Cp_SS_this)*100
+# %%
+for i in range(len(T_SS)):
+    print("T")
+    print(T_SS[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
+# %%
+molecule='NH3'
+cp_Temp=Cp_dict[molecule]
+T_SS,Cp_SS=np.loadtxt("Other_Cp/NH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
+Cp_SS_this=[]
+for i in range(len(T_SS)):
+    Cp_SS_this.append(float(cp_Temp[T_SS[i]]))
+di_abso=np.abs((Cp_SS-Cp_SS_this))
+di_nasa=(np.abs((Cp_SS-Cp_SS_this))/Cp_SS_this)*100
+# %%
+for i in range(len(T_SS)):
+    print("T")
+    print(T_SS[i])
+    print("Absolute Difference:")
+    print(di_abso[i])
+    print('difference(%):')
+    print(di_nasa[i])
 # %%

@@ -415,6 +415,7 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
             plt.axhline(y=3.0,c='gray')
             plt.axhline(y=5.0,c='gray')
             storepath="difference_absolute"
+            # storepath="difference"
             storename=storepath+"/"+species        
             plt.legend()
             plt.ylabel('Difference(%)')
@@ -445,5 +446,7 @@ plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa)
 
 
 
+
+# %%
 
 # %%
