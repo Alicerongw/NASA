@@ -364,9 +364,9 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
 
         if species=='PH3':
             other_data=True
-            T_SS,Cp_SS=np.loadtxt("Other_Cp/PH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
-            T_SS_di,di_SS=get_difference(Cp_dict,T_SS,Cp_SS,species)
-            plt.plot(T_SS,Cp_SS,color='deepskyblue',label="C. Sousa-Silva et al.") 
+            T_SS1,Cp_SS1=np.loadtxt("Other_Cp/PH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
+            T_SS_di1,di_SS1=get_difference(Cp_dict,T_SS1,Cp_SS1,species)
+            plt.plot(T_SS1,Cp_SS1,color='deepskyblue',label="C. Sousa-Silva et al.") 
         # Plot specific heat results in this work 
 
         T=[]
@@ -414,14 +414,14 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
             plt.axhline(y=2.0,c='gray')
             plt.axhline(y=3.0,c='gray')
             plt.axhline(y=5.0,c='gray')
-            storepath="difference_absolute"
-            # storepath="difference"
-            storename=storepath+"/"+species        
+            # storepath="Cp_Difference"
+            # storepath="Difference"
+            # storename=storepath+"/"+species        
             plt.legend()
             plt.ylabel('Difference(%)')
             plt.xlabel('T(K)')
-            plt.title('Specific Heat Difference For '+species)
-            plt.savefig(storename)
+            plt.title('Specific Heat Difference(%) For '+species)
+            # plt.savefig(storename)
             plt.show() 
 
 # Define the nasa polynomial format using for fitting
@@ -449,4 +449,8 @@ plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa)
 
 # %%
 
+# %%
+Cp_dict.keys()
+# %%
+Cp_JANAF.keys()
 # %%
