@@ -217,13 +217,17 @@ def get_polynomial_results(coefficients,x):
     Cp=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
     return Cp
 
-def get_Tmax_this():
+def get_Tmax_this(Tmax_hitran):
     Tmax_this=dict()
     species_list=['C2H2','CH3F','ClO','CO2','CS','H2O','H2S','HCN','HI','HO2','N2','N2O','NH3','O2','OCS','PH3','SO','SO2','SO3','NO','HCOOH']
     Tmax_list=[1200.,1900.,800.,2600.,3400.,3000.,2000.,1200.,3100.,1500.,2300.,1500.,1400.,450.,1500.,2000.,1200.,1300.,1100.,2500.,400.]
-    for i in range(len(species_list)):
-        if species_list[i] not in Tmax_this:
-            Tmax_this[species_list[i]]=Tmax_list[i]
+    for species in Tmax_hitran:
+        Tmax=Tmax_hitran[species]
+        if species in species_list:
+            index= species_list.index(species)
+            Tmax=Tmax_list[index]
+        if species not in Tmax_this:
+            Tmax_this[species]=Tmax
     return Tmax_this
 
 def get_difference(Cp_dict,T,Cp,species):
@@ -242,7 +246,7 @@ def get_difference(Cp_dict,T,Cp,species):
     Cp_di=(np.abs(np.array(Cp_that_di)-np.array(Cp_this_di))/np.array(Cp_this_di))*100
     return T_di, Cp_di
 
-def get_mean_max_difference(T_di,Tmax):
+def get_mean_max_var_difference(T_di,Tmax):
     diff_temp=[]
     diff_mean_max=[]
     T=T_di[0]
@@ -263,40 +267,39 @@ def create_dict(diff_dict,species,sourcename,diff):
         diff_dict[species][sourcename]=diff
     return diff_dict    
 
-def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this,Tmax_HITRAN):
+def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this):
     diff_dict=dict()
     for species in tqdm(Cp_dict):
-        Tmax=Tmax_HITRAN[species]
-        if species in Tmax_this:
-            Tmax=Tmax_this[species]
+        Tmax=Tmax_this[species]
         if species in di_J_dict:
             sourcename='J'
             T_J=di_J_dict[species]
-            diff_J=get_mean_max_difference(T_J,Tmax)
+            diff_J=get_mean_max_var_difference(T_J,Tmax)
             diff_dict=create_dict(diff_dict,species,sourcename,diff_J)   
         if species in di_nasa_dict:
             sourcename='N'
             T_N=di_nasa_dict[species]
-            diff_N=get_mean_max_difference(T_N,Tmax)
+            diff_N=get_mean_max_var_difference(T_N,Tmax)
             diff_dict=create_dict(diff_dict,species,sourcename,diff_N) 
         if species in di_Ca_dict:
             sourcename='Ca'
             T_Ca=di_Ca_dict[species]
-            diff_Ca=get_mean_max_difference(T_Ca,Tmax)
+            diff_Ca=get_mean_max_var_difference(T_Ca,Tmax)
             diff_dict=create_dict(diff_dict,species,sourcename,diff_Ca) 
         if species=='H2O':
             sourcename='Fur'
-            diff_Fur=get_mean_max_difference(T_di_Furtenbacher,Tmax)
+            diff_Fur=get_mean_max_var_difference(T_di_Furtenbacher,Tmax)
             diff_dict=create_dict(diff_dict,species,sourcename,diff_Fur)
         if species=='NH3':
             sourcename='SS'
-            diff_SS_N=get_mean_max_difference(T_di_SS_N,Tmax)
+            diff_SS_N=get_mean_max_var_difference(T_di_SS_N,Tmax)
             diff_dict=create_dict(diff_dict,species,sourcename,diff_SS_N)
         if species=='PH3':
             sourcename='SS'
-            diff_SS_P=get_mean_max_difference(T_di_SS_P,Tmax)
+            diff_SS_P=get_mean_max_var_difference(T_di_SS_P,Tmax)
             diff_dict=create_dict(diff_dict,species,sourcename,diff_SS_P) 
-    return diff_dict        
+    return diff_dict  
+
 # Using plots to compare the results with existing data
 def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this):
     di_J_dict=dict()
@@ -436,7 +439,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
         plt.ylabel('$C_{p}$')
         plt.xlabel('T(K)')
         plt.title('Specific Heat Fit For '+species)
-        plt.savefig(storename)
+        # plt.savefig(storename)
         plt.show() 
 
         if other_data:
@@ -481,19 +484,19 @@ if __name__ == '__main__':
     # Calculate the specific heat based on the partition functions from HITRAN database
     R=8.314 # Universal gas constant
     split_dict=create_split_dict()
-    Cp_dict,Tmax_dict=get_Cp(R,split_dict)
+    Cp_dict,Tmax_hitran=get_Cp(R,split_dict)
 
     # Read the specific heat results from other sources
     Cp_JANAF=get_JANAF()
     coe_Capitelli=get_Capitelli()
     coe_nasa=get_nasa(Cp_dict)
-    Tmax_this=get_Tmax_this()
+    Tmax_this=get_Tmax_this(Tmax_hitran)
 #%%
-di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this)
+di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this)
 #%%
-diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this,Tmax_dict)
+diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
 #%%
-diff_dict['SO3']
+diff_dict['CO2']
 # %%
 diff_dict
 # %%
