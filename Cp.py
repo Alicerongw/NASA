@@ -216,6 +216,16 @@ def get_nasa(Cp_dict):
 def get_polynomial_results(coefficients,x):
     Cp=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
     return Cp
+
+def get_Tmax_this():
+    Tmax_this=dict()
+    species_list=['C2H2','CH3F','ClO','CO2','CS','H2O','H2S','HCN','HI','HO2','N2','N2O','NH3','O2','OCS','PH3','SO','SO2','SO3','NO','HCOOH']
+    Tmax_list=[1200.,1900.,800.,2600.,3400.,3000.,2000.,1200.,3100.,1500.,2300.,1500.,1400.,450.,1500.,2000.,1200.,1300.,1100.,2500.,400.]
+    for i in range(len(species_list)):
+        if species_list[i] not in Tmax_this:
+            Tmax_this[species_list[i]]=Tmax_list[i]
+    return Tmax_this
+
 def get_difference(Cp_dict,T,Cp,species):
     cp_Temp=Cp_dict[species]
     T_di=[]
@@ -232,8 +242,66 @@ def get_difference(Cp_dict,T,Cp,species):
     Cp_di=(np.abs(np.array(Cp_that_di)-np.array(Cp_this_di))/np.array(Cp_this_di))*100
     return T_di, Cp_di
 
+def get_mean_max_difference(T_di,Tmax):
+    diff_temp=[]
+    diff_mean_max=[]
+    T=T_di[0]
+    differ=T_di[1]
+    for i in range(len(T)):
+        if T[i]<=Tmax:
+            diff_temp.append(float(differ[i]))
+    diff_mean_max.append(np.mean(diff_temp))   
+    diff_mean_max.append(np.max(diff_temp)) 
+    diff_mean_max.append(np.var(diff_temp))    
+    return diff_mean_max
+
+def create_dict(diff_dict,species,sourcename,diff):
+    if species in diff_dict:
+        diff_dict[species][sourcename]=diff
+    else:
+        diff_dict[species]=dict()
+        diff_dict[species][sourcename]=diff
+    return diff_dict    
+
+def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this,Tmax_HITRAN):
+    diff_dict=dict()
+    for species in tqdm(Cp_dict):
+        Tmax=Tmax_HITRAN[species]
+        if species in Tmax_this:
+            Tmax=Tmax_this[species]
+        if species in di_J_dict:
+            sourcename='J'
+            T_J=di_J_dict[species]
+            diff_J=get_mean_max_difference(T_J,Tmax)
+            diff_dict=create_dict(diff_dict,species,sourcename,diff_J)   
+        if species in di_nasa_dict:
+            sourcename='N'
+            T_N=di_nasa_dict[species]
+            diff_N=get_mean_max_difference(T_N,Tmax)
+            diff_dict=create_dict(diff_dict,species,sourcename,diff_N) 
+        if species in di_Ca_dict:
+            sourcename='Ca'
+            T_Ca=di_Ca_dict[species]
+            diff_Ca=get_mean_max_difference(T_Ca,Tmax)
+            diff_dict=create_dict(diff_dict,species,sourcename,diff_Ca) 
+        if species=='H2O':
+            sourcename='Fur'
+            diff_Fur=get_mean_max_difference(T_di_Furtenbacher,Tmax)
+            diff_dict=create_dict(diff_dict,species,sourcename,diff_Fur)
+        if species=='NH3':
+            sourcename='SS'
+            diff_SS_N=get_mean_max_difference(T_di_SS_N,Tmax)
+            diff_dict=create_dict(diff_dict,species,sourcename,diff_SS_N)
+        if species=='PH3':
+            sourcename='SS'
+            diff_SS_P=get_mean_max_difference(T_di_SS_P,Tmax)
+            diff_dict=create_dict(diff_dict,species,sourcename,diff_SS_P) 
+    return diff_dict        
 # Using plots to compare the results with existing data
-def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
+def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this):
+    di_J_dict=dict()
+    di_nasa_dict=dict()
+    di_Ca_dict=dict()
     for species in tqdm(Cp_dict):
         other_data=False
         cp_Temp=Cp_dict[species]
@@ -251,61 +319,38 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
             J_temp=Cp_JANAF[species]
             T_J=[]
             Cp_J=[]
-            T_J_di=[]
-            Cp_J_di=[]
-            Cp_this_J=[]
+
             for t in J_temp:
                 if (float(t) <=Tmax) & (float(t) >=Tmin):
                     T_J.append(float(t))
                     Cp_J.append(float(J_temp[t])) 
-            
-                    # if float(t) != 298.15:
-                    #     T_J_di.append(float(t))
-                    #     Cp_J_di.append(float(J_temp[t])) 
-                    #     Cp_this_J.append(float(cp_Temp[t]))
-                    #     di_J=Cp_J_di-Cp_this_J
             T_J_di,di_J=get_difference(Cp_dict,T_J,Cp_J,species)
+            T_di_J=np.vstack((T_J_di,di_J))
+            if species not in di_J_dict:
+                di_J_dict[species]=T_di_J
             plt.plot(T_J,Cp_J,color="blue",label="JANAF")   
 
         # plot specific heat using original nasa glenn polynomials
         if species in coe_nasa:
             other_data=True
-            # T_nasa_di=[]
-            Cp_nasa_di=[]
-            Cp_this_nasa=[]
             if Tmax<=1000:
-                x_nasa=np.arange(Tmin, Tmax, 0.01)
+                x_nasa=np.arange(Tmin, Tmax+1., 1.0)
                 coefficient_nasa=coe_nasa[species][0]
                 Cp_fit_nasa=get_polynomial_results(coefficient_nasa,x_nasa)
             else:
-                x_nasa1=np.arange(Tmin, 1000, 0.01)
+                x_nasa1=np.arange(Tmin, 1000, 1.0)
                 coefficient_nasa1=coe_nasa[species][0]
                 Cp_fit_nasa1=get_polynomial_results(coefficient_nasa1,x_nasa1)
-                x_nasa2=np.arange(1000, Tmax, 0.01)
+                x_nasa2=np.arange(1000, Tmax+1., 1.0)
                 coefficient_nasa2=coe_nasa[species][1]
                 Cp_fit_nasa2=get_polynomial_results(coefficient_nasa2,x_nasa2)
                 x_nasa=np.hstack((x_nasa1,x_nasa2))
                 Cp_fit_nasa=np.hstack(( Cp_fit_nasa1, Cp_fit_nasa2))
 
-            # T_di=[]
-            # Cp_that_di=[]
-            # Cp_this_di=[]
-            # for i in range(len(x_nasa)):
-
-            #     if x_nasa[i]%1.00==0.:
-            #         T_di.append(float(x_nasa[i]))
-            #         Cp_that_di.append(float(Cp_fit_nasa[i]))
-            #         Cp_this_di.append(float(cp_Temp[x_nasa[i]]))  
-
-
-            # Cp_di=(np.abs(np.array(Cp_that_di)-np.array(Cp_this_di))/np.array(Cp_this_di))*100
             T_nasa_di,di_nasa=get_difference(Cp_dict,x_nasa,Cp_fit_nasa,species)
-            # print(T_nasa_di)
-            # for ii in range(len(x_nasa)):
-            #     if x_nasa[ii]%1.0==0.0:
-            #        T_nasa_di.append(x_nasa[ii])
-            #        Cp_nasa_di
-            #        Cp_this_nasa
+            T_di_nasa=np.vstack((T_nasa_di,di_nasa))
+            if species not in di_nasa_dict:
+                di_nasa_dict[species]=T_di_nasa
             plt.plot(x_nasa,Cp_fit_nasa,color="black",label="NASA Glenn") 
 
 
@@ -313,23 +358,26 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
         if species in coe_Capitelli:
             other_data=True
             if Tmax<=1000:
-                x_Ca=np.arange(Tmin, Tmax, 0.01)
+                x_Ca=np.arange(Tmin, Tmax+1., 1.0)
                 coefficient_Ca=coe_Capitelli[species][0]
                 Cp_fit_Ca=get_polynomial_results(coefficient_Ca,x_Ca)
             else:
-                x_Ca1=np.arange(Tmin, 1000, 0.01)
+                x_Ca1=np.arange(Tmin, 1000, 1.0)
                 coefficient_Ca1=coe_Capitelli[species][0]
                 Cp_fit_Ca1=get_polynomial_results(coefficient_Ca1,x_Ca1)
-                x_Ca2=np.arange(1000, 3000, 0.01)
+                x_Ca2=np.arange(1000, 3000, 1.0)
                 coefficient_Ca2=coe_Capitelli[species][1]
                 Cp_fit_Ca2=get_polynomial_results(coefficient_Ca2,x_Ca2)
-                x_Ca3=np.arange(3000, Tmax, 0.01)
+                x_Ca3=np.arange(3000, Tmax+1., 1.0)
                 coefficient_Ca3=coe_Capitelli[species][2]
                 Cp_fit_Ca3=get_polynomial_results(coefficient_Ca3,x_Ca3)
                 x_Ca=np.hstack((x_Ca1,x_Ca2,x_Ca3))
                 Cp_fit_Ca=np.hstack(( Cp_fit_Ca1, Cp_fit_Ca2,Cp_fit_Ca3))
 
             T_Ca_di,di_Ca=get_difference(Cp_dict,x_Ca,Cp_fit_Ca,species)
+            T_di_Ca=np.vstack((T_Ca_di,di_Ca))
+            if species not in di_Ca_dict:
+                di_Ca_dict[species]=T_di_Ca
             plt.plot(x_Ca,Cp_fit_Ca,color="green",label="Capitelli et.al")  
 
         if species=='H2O':
@@ -339,6 +387,9 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
             T_VT_di,di_VT=get_difference(Cp_dict,T_VT,Cp_VT,species)
             T_Harris_di,di_Harris=get_difference(Cp_dict,T_Harris,Cp_Harris,species)
             T_Furtenbacher_di,di_Furtenbacher=get_difference(Cp_dict,T_Furtenbacher,Cp_Furtenbacher,species)
+            # T_di_VT=np.vstack((T_VT_di,di_VT))
+            # T_di_Harris=np.vstack((T_Harris_di,di_Harris))
+            T_di_Furtenbacher=np.vstack((T_Furtenbacher_di,di_Furtenbacher))
             plt.plot(T_VT,Cp_VT,color='orange',label="Vidler & Tennyson")
             plt.plot(T_Harris,Cp_Harris,color='aqua',label="Harris et.al")
             plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
@@ -346,27 +397,17 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
         if species=='NH3':
             other_data=True
             T_SS,Cp_SS=np.loadtxt("Other_Cp/NH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
-            T_SS_di,di_SS=get_difference(Cp_dict,T_SS,Cp_SS,species)
+            T_SS_di,di_SS_N=get_difference(Cp_dict,T_SS,Cp_SS,species)
+            T_di_SS_N=np.vstack((T_SS_di,di_SS_N))
             plt.plot(T_SS,Cp_SS,color='deepskyblue',label="C. Sousa-Silva et al.")
 
         if species=='PH3':
             other_data=True
             T_SS,Cp_SS=np.loadtxt("Other_Cp/PH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
-            T_SS_di,di_SS=get_difference(Cp_dict,T_SS,Cp_SS,species)
+            T_SS_di,di_SS_P=get_difference(Cp_dict,T_SS,Cp_SS,species)
+            T_di_SS_P=np.vstack((T_SS_di,di_SS_P))
             plt.plot(T_SS,Cp_SS,color='deepskyblue',label="C. Sousa-Silva et al.") 
 
-
-        if species=='NH3':
-            other_data=True
-            T_SS,Cp_SS=np.loadtxt("Other_Cp/NH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
-            T_SS_di,di_SS=get_difference(Cp_dict,T_SS,Cp_SS,species)
-            plt.plot(T_SS,Cp_SS,color='deepskyblue',label="C. Sousa-Silva et al.")
-
-        if species=='PH3':
-            other_data=True
-            T_SS1,Cp_SS1=np.loadtxt("Other_Cp/PH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
-            T_SS_di1,di_SS1=get_difference(Cp_dict,T_SS1,Cp_SS1,species)
-            plt.plot(T_SS1,Cp_SS1,color='deepskyblue',label="C. Sousa-Silva et al.") 
         # Plot specific heat results in this work 
 
         T=[]
@@ -376,9 +417,14 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
                 T.append(float(t))
                 Cp.append(float(cp_Temp[t]))
         plt.plot(T,Cp,color="red",label="This work")
+     
 
-        # storepath="pictures"
-        # storename=storepath+"/"+species
+        if species in Tmax_this:
+            tmax=float(Tmax_this[species])
+            plt.axvline(x=tmax,linestyle='--')  
+
+        storepath="pictures"
+        storename=storepath+"/"+species
 
 
         if species=='N2O':
@@ -390,7 +436,7 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
         plt.ylabel('$C_{p}$')
         plt.xlabel('T(K)')
         plt.title('Specific Heat Fit For '+species)
-        # plt.savefig(storename)
+        plt.savefig(storename)
         plt.show() 
 
         if other_data:
@@ -406,14 +452,15 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
                 plt.plot(T_Harris_di,di_Harris,color='aqua',label="Harris et.al")
                 plt.plot(T_Furtenbacher_di,di_Furtenbacher,color='purple',label="Furtenbacher et.al")
             if species=='NH3':
-                plt.plot(T_SS_di,di_SS,color='deepskyblue',label="C. Sousa-Silva et al.")
+                plt.plot(T_SS_di,di_SS_N,color='deepskyblue',label="C. Sousa-Silva et al.")
             if species=='PH3':
-                plt.plot(T_SS_di,di_SS,color='deepskyblue',label="C. Sousa-Silva et al.")
+                plt.plot(T_SS_di,di_SS_P,color='deepskyblue',label="C. Sousa-Silva et al.")
 
-            plt.axhline(y=1.0,c='gray')
-            plt.axhline(y=2.0,c='gray')
-            plt.axhline(y=3.0,c='gray')
-            plt.axhline(y=5.0,c='gray')
+
+            # plt.axhline(y=1.0,c='gray')
+            # plt.axhline(y=2.0,c='gray')
+            # plt.axhline(y=3.0,c='gray')
+            # plt.axhline(y=5.0,c='gray')
             # storepath="Cp_Difference"
             # storepath="Difference"
             # storename=storepath+"/"+species        
@@ -424,6 +471,7 @@ def plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa):
             # plt.savefig(storename)
             plt.show() 
 
+    return di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P
 # Define the nasa polynomial format using for fitting
 def objective(x,a1,a2,a3,a4,a5,a6,a7):
     return R*(a1*x**(-2)+a2*x**(-1)+a3+a4*x+a5*x**2+a6*x**3+a7*x**4)
@@ -439,18 +487,15 @@ if __name__ == '__main__':
     Cp_JANAF=get_JANAF()
     coe_Capitelli=get_Capitelli()
     coe_nasa=get_nasa(Cp_dict)
+    Tmax_this=get_Tmax_this()
 #%%
-plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa)
-
-
-
-
-
-
+di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this)
+#%%
+diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this,Tmax_dict)
+#%%
+diff_dict['SO3']
 # %%
-
+diff_dict
 # %%
-Cp_dict.keys()
-# %%
-Cp_JANAF.keys()
+Tmax_this
 # %%
