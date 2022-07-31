@@ -15,7 +15,7 @@ from scipy.optimize import curve_fit
 def create_split_dict():
     # To improve the accuracy of polynomial fit, the temperature has been divided into several intervls
     # The split points are used for determining the interval
-    split_list=[['CH4'],['H2O2'],['CLO'],['HCN','CO','HF','HI','N2','NH3','OCS','OH','PH3','C2H2','C2N2','C2H4','CH3CL','CH3F','OH','O2'],['SF6'],['CS','HO2','NO','NO+','SO'],['H2','HBr','HCL'],['SO3'],['C2H6'],['C4H2']]
+    split_list=[['CH4'],['H2O2'],['ClO'],['HCN','CO','HF','HI','N2','NH3','OCS','OH','PH3','C2H2','C2N2','C2H4','CH3Cl','CH3F','OH','O2'],['SF6'],['CS','HO2','NO','NO+','SO'],['H2','HBr','HCl'],['SO3'],['C2H6'],['C4H2']]
     split=[[200,500,1300,1500],[200,1500],[200,4000],[200,1000],[200,1000,2000,3000,4000],[200,1000,4000],[200,1000,5000],[200,500,650],[200,1000,2000,3000],[200,1000,2000]]    
     split_dict=dict()
     for i in range(len(split_list)):
@@ -390,8 +390,6 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
             T_VT_di,di_VT=get_difference(Cp_dict,T_VT,Cp_VT,species)
             T_Harris_di,di_Harris=get_difference(Cp_dict,T_Harris,Cp_Harris,species)
             T_Furtenbacher_di,di_Furtenbacher=get_difference(Cp_dict,T_Furtenbacher,Cp_Furtenbacher,species)
-            # T_di_VT=np.vstack((T_VT_di,di_VT))
-            # T_di_Harris=np.vstack((T_Harris_di,di_Harris))
             T_di_Furtenbacher=np.vstack((T_Furtenbacher_di,di_Furtenbacher))
             plt.plot(T_VT,Cp_VT,color='orange',label="Vidler & Tennyson")
             plt.plot(T_Harris,Cp_Harris,color='aqua',label="Harris et.al")
@@ -422,7 +420,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
         plt.plot(T,Cp,color="red",label="This work")
      
 
-        if species in Tmax_this:
+        if Tmax_this[species]!=Tmax:
             tmax=float(Tmax_this[species])
             plt.axvline(x=tmax,linestyle='--')  
 
@@ -439,7 +437,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
         plt.ylabel('$C_{p}$')
         plt.xlabel('T(K)')
         plt.title('Specific Heat Fit For '+species)
-        # plt.savefig(storename)
+        plt.savefig(storename)
         plt.show() 
 
         if other_data:
@@ -475,9 +473,165 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
             plt.show() 
 
     return di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P
+
 # Define the nasa polynomial format using for fitting
 def objective(x,a1,a2,a3,a4,a5,a6,a7):
     return R*(a1*x**(-2)+a2*x**(-1)+a3+a4*x+a5*x**2+a6*x**3+a7*x**4)
+
+def get_coefficients(Cp_dict,Tmax_this):
+    fit_dictionary=dict()
+    for species in Cp_dict:
+        Cpdict_temp=Cp_dict[species]            
+        list_sorted=sorted(Cpdict_temp.items(),key=lambda item:item[0])
+        T_this=[]
+        Cp_this=[]
+        for i in range(len(list_sorted)):
+            T_this.append(list_sorted[i][0])
+            Cp_this.append(list_sorted[i][1])
+
+        Tmax=Tmax_this[species]
+
+        Tmin_index=0
+        if species=='NO+':
+            Tmin_index=98
+        
+        # Fit the specific heat
+        fit_Tinterval=[]
+        fit_Cpinterval=[]
+        if Tmax<=1000:
+            temp_intervals=1
+            fit_Tinterval.append(T_this[Tmin_index:int(Tmax-199)])
+            fit_Cpinterval.append(Cp_this[Tmin_index:int(Tmax-199)])    
+        else:
+            temp_intervals=2
+            fit_Tinterval.append(T_this[Tmin_index:801])
+            fit_Cpinterval.append(Cp_this[Tmin_index:801])
+            fit_Tinterval.append(T_this[800:int(Tmax-199)])
+            fit_Cpinterval.append(Cp_this[800:int(Tmax-199)])
+
+        coefficients = np.zeros([temp_intervals, 7])
+        for ii in range(len(fit_Tinterval)):
+            x=np.array(fit_Tinterval[ii])
+            y=np.array(fit_Cpinterval[ii])
+            popt, _ = curve_fit(objective, x, y)
+            for i in range(7):
+                coefficients[ii,i]=popt[i]
+
+        fit_dictionary[species]=coefficients
+    return fit_dictionary
+
+def store_coefficients(Tmax_dict,fit_dictionary):
+    molecule_list=[]
+    Tmin_list=[]
+    Tmax_list=[]
+    a1_list=[]
+    a2_list=[]
+    a3_list=[]
+    a4_list=[]
+    a5_list=[]
+    a6_list=[]
+    a7_list=[]
+
+    for molecule in fit_dictionary:
+        Tmin=200.
+        if molecule=='NO+':
+            Tmin=298.15
+        coefficient_temp=fit_dictionary[molecule]
+        Tmax=Tmax_dict[molecule]
+        if Tmax<=1000:
+            temp_intervals=1
+        else:
+            temp_intervals=2
+        
+        for i in range(temp_intervals):
+            if i ==0:
+                Tmin_list.append(Tmin)
+                if temp_intervals==1:
+                    Tmax_list.append(Tmax)
+                else:
+                    Tmax_list.append(1000)
+            if i ==1:
+                Tmin_list.append(1000)
+                Tmax_list.append(Tmax)
+            molecule_list.append(molecule)
+            a1_list.append(coefficient_temp[i][0])
+            a2_list.append(coefficient_temp[i][1])
+            a3_list.append(coefficient_temp[i][2])
+            a4_list.append(coefficient_temp[i][3])
+            a5_list.append(coefficient_temp[i][4])
+            a6_list.append(coefficient_temp[i][5])
+            a7_list.append(coefficient_temp[i][6])
+
+        
+    fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
+    fit_data.to_csv("fit_coefficients.csv",index=False)
+
+def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
+    residual_dict=dict()
+    for molecule in tqdm(Cp_dict):
+        Tmax=Tmax_this[molecule]
+        Tmin=200.
+        if molecule=='NO+':
+            Tmin=298
+        # plot specific heat in this work after fitting
+        cp_Temp=Cp_dict[molecule]
+        T=[]
+        Cp=[]
+        for t in cp_Temp:
+            if (float(t) <=Tmax) & (float(t) >=Tmin):
+                T.append(float(t))
+                Cp.append(float(cp_Temp[t]))
+
+
+        #plot specific heat in this work after fitting
+        if Tmax<=1000:
+            x=np.arange(Tmin,Tmax+1., 1.)
+            coefficient_this=fit_dictionary[molecule][0]
+            Cp_fit_this=R*(coefficient_this[0]*x**(-2)+coefficient_this[1]*x**(-1)+coefficient_this[2]+coefficient_this[3]*x+coefficient_this[4]*x**2+coefficient_this[5]*x**3+coefficient_this[6]*x**4)
+        
+        else:
+            x1=np.arange(Tmin,1000.,1.)
+            coefficient_this1=fit_dictionary[molecule][0]
+            Cp_fit_this1=R*(coefficient_this1[0]*x1**(-2)+coefficient_this1[1]*x1**(-1)+coefficient_this1[2]+coefficient_this1[3]*x1+coefficient_this1[4]*x1**2+coefficient_this1[5]*x1**3+coefficient_this1[6]*x1**4)
+            x2=np.arange(1000.,Tmax+1., 1.)
+            coefficient_this2=fit_dictionary[molecule][1]
+            Cp_fit_this2=R*(coefficient_this2[0]*x2**(-2)+coefficient_this2[1]*x2**(-1)+coefficient_this2[2]+coefficient_this2[3]*x2+coefficient_this2[4]*x2**2+coefficient_this2[5]*x2**3+coefficient_this2[6]*x2**4)
+            x=np.hstack((x1,x2))
+            Cp_fit_this=np.hstack(( Cp_fit_this1, Cp_fit_this2))
+
+        residual= Cp - Cp_fit_this
+        array_temp=np.zeros(3)
+        array_temp[0]=np.min(np.abs(residual))
+        array_temp[1]=np.max(np.abs(residual))
+        array_temp[2]=np.mean(np.abs(residual))
+
+        if molecule not in residual_dict:
+            residual_dict[molecule]=array_temp
+
+        plt.figure(figsize=(8,6))
+        fig,ax1 = plt.subplots()
+        ax2 = ax1.twinx()          
+        ax1.plot(x,Cp,color="blue",label="Original Cp")
+        ax1.plot(x,Cp_fit_this,color="red",label="Fitted Cp")
+        ax2.plot(x,residual,color="black")
+        
+        ax1.set_xlabel('T(k)')    
+        ax1.set_ylabel('Cp',color = 'red')   
+        ax2.set_ylabel('Residuals',color = 'black')
+
+        plt.axhline(y=0.0,c="gray")
+        # plt.plot(x,residual)    
+
+        storepath="residual_and_fit"
+        storename=storepath+"/"+molecule
+
+        ax1.legend()
+        # plt.ylabel('Residuals')
+        # plt.xlabel('T(K)')
+        plt.title('Residuals Plot For '+molecule)
+        # plt.savefig(storename)
+        plt.show()
+    return residual_dict
 #%%
 if __name__ == '__main__':
 
@@ -491,14 +645,12 @@ if __name__ == '__main__':
     coe_Capitelli=get_Capitelli()
     coe_nasa=get_nasa(Cp_dict)
     Tmax_this=get_Tmax_this(Tmax_hitran)
+    di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this)
+    # diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
+    # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
+    # # store_coefficients(Tmax_this,fit_dictionary)
+    # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 #%%
-di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this)
+
 #%%
-diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
-#%%
-diff_dict['CO2']
-# %%
-diff_dict
-# %%
-Tmax_this
 # %%
