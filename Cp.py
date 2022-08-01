@@ -404,6 +404,8 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
             T_Furtenbacher_di_O2,di_Furtenbacher_O2=get_difference(Cp_dict,T_Furtenbacher,Cp_Furtenbacher,species)
             T_di_Furtenbacher_O2=np.vstack((T_Furtenbacher_di_O2,di_Furtenbacher_O2))
             plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
+            T_Gurvich,Cp_Gurvich=np.loadtxt("Other_Cp/O2_Gurvich.txt",usecols=(0,1),unpack=True)
+            plt.scatter(T_Gurvich,Cp_Gurvich,color="orange",marker="x",label="Gurvich")
 
         if species=='NH3':
             other_data=True
@@ -658,10 +660,10 @@ if __name__ == '__main__':
     coe_nasa=get_nasa(Cp_dict)
     Tmax_this=get_Tmax_this(Tmax_hitran)
     di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this)
-    diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
-    fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
-    # store_coefficients(Tmax_this,fit_dictionary)
-    residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
+    # diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
+    # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
+    # # store_coefficients(Tmax_this,fit_dictionary)
+    # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 
 #%%
 # %%
