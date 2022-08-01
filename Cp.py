@@ -395,9 +395,11 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
             T_Harris_di,di_Harris=get_difference(Cp_dict,T_Harris,Cp_Harris,species)
             T_Furtenbacher_di,di_Furtenbacher=get_difference(Cp_dict,T_Furtenbacher,Cp_Furtenbacher,species)
             T_di_Furtenbacher=np.vstack((T_Furtenbacher_di,di_Furtenbacher))
+            T_Ruscic,Cp_Ruscic=np.loadtxt("Other_Cp/H2O_Ruscic.txt",usecols=(0,1),unpack=True) 
             plt.plot(T_VT,Cp_VT,color='orange',label="Vidler & Tennyson")
             plt.plot(T_Harris,Cp_Harris,color='aqua',label="Harris et.al")
             plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
+            plt.plot(T_Ruscic,Cp_Ruscic,color='green',label="Ruscic")
 
         if species=='O2':
             T_Furtenbacher,Cp_Furtenbacher=np.loadtxt("Other_Cp/O2_Furtenbacher.txt",usecols=(0,1),unpack=True) 
