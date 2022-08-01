@@ -267,7 +267,7 @@ def create_dict(diff_dict,species,sourcename,diff):
         diff_dict[species][sourcename]=diff
     return diff_dict    
 
-def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this):
+def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this):
     diff_dict=dict()
     for species in tqdm(Cp_dict):
         Tmax=Tmax_this[species]
@@ -290,6 +290,10 @@ def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T
             sourcename='Fur'
             diff_Fur=get_mean_max_var_difference(T_di_Furtenbacher,Tmax)
             diff_dict=create_dict(diff_dict,species,sourcename,diff_Fur)
+        if species=='O2':
+            sourcename='Fur'
+            diff_Fur_O2=get_mean_max_var_difference(T_di_Furtenbacher_O2,Tmax)
+            diff_dict=create_dict(diff_dict,species,sourcename,diff_Fur_O2)
         if species=='NH3':
             sourcename='SS'
             diff_SS_N=get_mean_max_var_difference(T_di_SS_N,Tmax)
@@ -395,6 +399,12 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
             plt.plot(T_Harris,Cp_Harris,color='aqua',label="Harris et.al")
             plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
 
+        if species=='O2':
+            T_Furtenbacher,Cp_Furtenbacher=np.loadtxt("Other_Cp/O2_Furtenbacher.txt",usecols=(0,1),unpack=True) 
+            T_Furtenbacher_di_O2,di_Furtenbacher_O2=get_difference(Cp_dict,T_Furtenbacher,Cp_Furtenbacher,species)
+            T_di_Furtenbacher_O2=np.vstack((T_Furtenbacher_di_O2,di_Furtenbacher_O2))
+            plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
+
         if species=='NH3':
             other_data=True
             T_SS,Cp_SS=np.loadtxt("Other_Cp/NH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
@@ -452,6 +462,8 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
                 plt.plot(T_VT_di,di_VT,color='orange',label="Vidler & Tennyson")
                 plt.plot(T_Harris_di,di_Harris,color='aqua',label="Harris et.al")
                 plt.plot(T_Furtenbacher_di,di_Furtenbacher,color='purple',label="Furtenbacher et.al")
+            if species=='O2':
+                plt.plot(T_Furtenbacher_di_O2,di_Furtenbacher_O2,color='purple',label="Furtenbacher et.al")
             if species=='NH3':
                 plt.plot(T_SS_di,di_SS_N,color='deepskyblue',label="C. Sousa-Silva et al.")
             if species=='PH3':
@@ -472,7 +484,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
             # plt.savefig(storename)
             plt.show() 
 
-    return di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P
+    return di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P
 
 # Define the nasa polynomial format using for fitting
 def objective(x,a1,a2,a3,a4,a5,a6,a7):
@@ -645,12 +657,11 @@ if __name__ == '__main__':
     coe_Capitelli=get_Capitelli()
     coe_nasa=get_nasa(Cp_dict)
     Tmax_this=get_Tmax_this(Tmax_hitran)
-    di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this)
-    # diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
-    # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
-    # # store_coefficients(Tmax_this,fit_dictionary)
-    # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
-#%%
+    di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this)
+    diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
+    fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
+    # store_coefficients(Tmax_this,fit_dictionary)
+    residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 
 #%%
 # %%
