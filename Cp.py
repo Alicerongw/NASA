@@ -163,6 +163,22 @@ def get_Capitelli():
             coe_Capitelli[species]=coefficients_Ca
     return coe_Capitelli
 
+# Generate a dictionary storing the specific heat fit coefficients from Burcat
+def get_Burcat(): 
+    Burcat=np.loadtxt("Other_Cp/Burcat_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
+    Burcat_specials=['CH3Br','CH3I','CH3OH','ClO','ClONO2','COF2','GeH4','H2O2','HBr','HNO3','HO2','HOBr','HOCl','NH3','PH3','OH']
+    coe_Burcat=dict()
+    for i in range(len(Burcat_specials)):
+        n=i*2
+        species=Burcat_specials[i]
+        coefficients_Burcat = np.zeros([2, 7])
+        for ii in range(2):
+            coefficients_Burcat[ii,]=Burcat[n]
+            n+=1
+        if species not in coe_Burcat:
+            coe_Burcat[species]=coefficients_Burcat
+    return coe_Burcat
+
 # Read and store the coefficients from original nasa glenn polynomials
 def get_nasa(Cp_dict):
 
@@ -267,7 +283,7 @@ def create_dict(diff_dict,species,sourcename,diff):
         diff_dict[species][sourcename]=diff
     return diff_dict    
 
-def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this):
+def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this):
     diff_dict=dict()
     for species in tqdm(Cp_dict):
         Tmax=Tmax_this[species]
@@ -305,10 +321,11 @@ def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, d
     return diff_dict  
 
 # Using plots to compare the results with existing data
-def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this):
+def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,Tmax_this):
     di_J_dict=dict()
     di_nasa_dict=dict()
     di_Ca_dict=dict()
+    di_Burcat_dict=dict()
     for species in tqdm(Cp_dict):
         other_data=False
         cp_Temp=Cp_dict[species]
@@ -360,7 +377,28 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
                 di_nasa_dict[species]=T_di_nasa
             plt.plot(x_nasa,Cp_fit_nasa,color="black",label="NASA Glenn") 
 
+        # plot specific heat using original nasa glenn polynomials
+        if species in coe_Burcat:
+            other_data=True
+            if Tmax<=1000:
+                x_Burcat=np.arange(Tmin, Tmax+1., 1.0)
+                coefficient_Burcat=coe_Burcat[species][0]
+                Cp_fit_Burcat=get_polynomial_results(coefficient_Burcat,x_Burcat)
+            else:
+                x_Burcat1=np.arange(Tmin, 1000, 1.0)
+                coefficient_Burcat1=coe_Burcat[species][0]
+                Cp_fit_Burcat1=get_polynomial_results(coefficient_Burcat1,x_Burcat1)
+                x_Burcat2=np.arange(1000, Tmax+1., 1.0)
+                coefficient_Burcat2=coe_Burcat[species][1]
+                Cp_fit_Burcat2=get_polynomial_results(coefficient_Burcat2,x_Burcat2)
+                x_Burcat=np.hstack((x_Burcat1,x_Burcat2))
+                Cp_fit_Burcat=np.hstack(( Cp_fit_Burcat1, Cp_fit_Burcat2))
 
+            T_Burcat_di,di_Burcat=get_difference(Cp_dict,x_Burcat,Cp_fit_Burcat,species)
+            T_di_Burcat=np.vstack((T_Burcat_di,di_Burcat))
+            if species not in di_Burcat_dict:
+                di_Burcat_dict[species]=T_di_Burcat
+            plt.plot(x_Burcat,Cp_fit_Burcat,color='orange',label="Burcat") 
 
         if species in coe_Capitelli:
             other_data=True
@@ -488,7 +526,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_t
             # plt.savefig(storename)
             plt.show() 
 
-    return di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P
+    return di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P
 
 # Define the nasa polynomial format using for fitting
 def objective(x,a1,a2,a3,a4,a5,a6,a7):
@@ -659,13 +697,17 @@ if __name__ == '__main__':
     # Read the specific heat results from other sources
     Cp_JANAF=get_JANAF()
     coe_Capitelli=get_Capitelli()
+    coe_Burcat=get_Burcat()
     coe_nasa=get_nasa(Cp_dict)
     Tmax_this=get_Tmax_this(Tmax_hitran)
-    di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,Tmax_this)
+    di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,Tmax_this)
     # diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
     # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
     # # store_coefficients(Tmax_this,fit_dictionary)
     # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 
 #%%
+coe_Burcat.keys()
+# %%
+coe_Burcat['GeH4']
 # %%
