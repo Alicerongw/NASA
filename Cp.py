@@ -235,8 +235,8 @@ def get_polynomial_results(coefficients,x):
 
 def get_Tmax_this(Tmax_hitran):
     Tmax_this=dict()
-    species_list=['C2H2','CH3F','ClO','CO2','CS','H2O','H2S','HCN','HI','HO2','N2','N2O','NH3','O2','OCS','PH3','SO','SO2','SO3','NO','HCOOH']
-    Tmax_list=[1200.,1900.,800.,2600.,3400.,3000.,2000.,1200.,3100.,1500.,2300.,1500.,1400.,450.,1500.,2000.,1200.,1300.,1100.,2500.,400.]
+    species_list=['C2H2','ClO','CO2','CS','H2O','H2S','HCN','HI','HO2','N2','N2O','NH3','O2','PH3','SO','SO3','HCOOH']
+    Tmax_list=[1200.,1000.,3000.,3800.,3500.,2250.,1700.,3100.,1900.,2500.,1500.,1700.,500.,2200.,1500.,1400.,400.]
     for species in Tmax_hitran:
         Tmax=Tmax_hitran[species]
         if species in species_list:
@@ -283,7 +283,7 @@ def create_dict(diff_dict,species,sourcename,diff):
         diff_dict[species][sourcename]=diff
     return diff_dict    
 
-def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this):
+def compare_difference(di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this):
     diff_dict=dict()
     for species in tqdm(Cp_dict):
         Tmax=Tmax_this[species]
@@ -297,6 +297,11 @@ def compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T
             T_N=di_nasa_dict[species]
             diff_N=get_mean_max_var_difference(T_N,Tmax)
             diff_dict=create_dict(diff_dict,species,sourcename,diff_N) 
+        if species in di_Burcat_dict:
+            sourcename='B'
+            T_B=di_Burcat_dict[species]
+            diff_B=get_mean_max_var_difference(T_B,Tmax)
+            diff_dict=create_dict(diff_dict,species,sourcename,diff_B) 
         if species in di_Ca_dict:
             sourcename='Ca'
             T_Ca=di_Ca_dict[species]
@@ -398,7 +403,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
             T_di_Burcat=np.vstack((T_Burcat_di,di_Burcat))
             if species not in di_Burcat_dict:
                 di_Burcat_dict[species]=T_di_Burcat
-            plt.plot(x_Burcat,Cp_fit_Burcat,color='orange',label="Burcat") 
+            plt.plot(x_Burcat,Cp_fit_Burcat,color='green',label="Burcat") 
 
         if species in coe_Capitelli:
             other_data=True
@@ -500,6 +505,8 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
                 plt.plot(T_nasa_di,di_nasa,color="black",label="NASA Glenn") 
             if species in coe_Capitelli:
                 plt.plot(T_Ca_di,di_Ca,color="green",label="Capitelli et.al") 
+            if species in coe_Burcat:
+                plt.plot(T_Burcat_di,di_Burcat,color='green',label="Burcat")                 
             if species=='H2O':
                 plt.plot(T_VT_di,di_VT,color='orange',label="Vidler & Tennyson")
                 plt.plot(T_Harris_di,di_Harris,color='aqua',label="Harris et.al")
@@ -517,8 +524,8 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
             # plt.axhline(y=3.0,c='gray')
             # plt.axhline(y=5.0,c='gray')
             # storepath="Cp_Difference"
-            # storepath="Difference"
-            # storename=storepath+"/"+species        
+            storepath="Difference(%)"
+            storename=storepath+"/"+species        
             plt.legend()
             plt.ylabel('Difference(%)')
             plt.xlabel('T(K)')
@@ -701,7 +708,7 @@ if __name__ == '__main__':
     coe_nasa=get_nasa(Cp_dict)
     Tmax_this=get_Tmax_this(Tmax_hitran)
     di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,Tmax_this)
-    # diff_dict=compare_difference(di_J_dict, di_nasa_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
+    diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
     # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
     # # store_coefficients(Tmax_this,fit_dictionary)
     # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
@@ -710,4 +717,10 @@ if __name__ == '__main__':
 coe_Burcat.keys()
 # %%
 coe_Burcat['GeH4']
+# %%
+diff_dict['HCN']
+# %%
+diff_dict['SO']
+# %%
+diff_dict['HO2']
 # %%
