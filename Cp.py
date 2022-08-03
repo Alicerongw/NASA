@@ -236,7 +236,7 @@ def get_polynomial_results(coefficients,x):
 def get_Tmax_this(Tmax_hitran):
     Tmax_this=dict()
     species_list=['C2H2','ClO','CO2','CS','H2O','H2S','HCN','HI','HO2','N2','N2O','NH3','O2','PH3','SO','SO3','HCOOH']
-    Tmax_list=[1200.,1000.,3000.,3800.,3500.,2250.,1700.,3100.,1900.,2500.,1500.,1700.,500.,2200.,1500.,1400.,400.]
+    Tmax_list=[1400.,1000.,3000.,3800.,3500.,2250.,1700.,3100.,1900.,2500.,1500.,1700.,500.,2200.,1500.,1400.,5000.]
     for species in Tmax_hitran:
         Tmax=Tmax_hitran[species]
         if species in species_list:
@@ -326,7 +326,7 @@ def compare_difference(di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_
     return diff_dict  
 
 # Using plots to compare the results with existing data
-def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,Tmax_this):
+def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,Tmax_this,Cp_theorets):
     di_J_dict=dict()
     di_nasa_dict=dict()
     di_Ca_dict=dict()
@@ -465,6 +465,24 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
             T_SS_di,di_SS_P=get_difference(Cp_dict,T_SS,Cp_SS,species)
             T_di_SS_P=np.vstack((T_SS_di,di_SS_P))
             plt.plot(T_SS,Cp_SS,color='deepskyblue',label="C. Sousa-Silva et al.") 
+
+        # Plot JANAF specific heat
+        if species in Cp_theorets:
+
+            other_data=True
+            th_temp=Cp_theorets[species]
+            T_th=[]
+            Cp_th=[]
+
+            for t in th_temp:
+                if (float(t) <=Tmax) & (float(t) >=Tmin):
+                    T_th.append(float(t))
+                    Cp_th.append(float(th_temp[t])) 
+            # T_th_di,di_th=get_difference(Cp_dict,T_th,Cp_th,species)
+            # T_di_th=np.vstack((T_th_di,di_th))
+            # if species not in di_th_dict:
+            #     di_th_dict[species]=T_di_th
+            plt.plot(T_th,Cp_th,color="blue",label="Theorets")   
 
         # Plot specific heat results in this work 
 
@@ -707,10 +725,10 @@ if __name__ == '__main__':
     coe_Burcat=get_Burcat()
     coe_nasa=get_nasa(Cp_dict)
     Tmax_this=get_Tmax_this(Tmax_hitran)
-    di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,Tmax_this)
-    diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
+    di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,Tmax_this,Cp_theorets)
+    # diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
     # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
-    # # store_coefficients(Tmax_this,fit_dictionary)
+    # store_coefficients(Tmax_this,fit_dictionary)
     # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 
 #%%
@@ -722,5 +740,122 @@ diff_dict['HCN']
 # %%
 diff_dict['SO']
 # %%
-diff_dict['HO2']
+diff_dict['HCOOH']
+# %%
+coe_Capitelli=get_Capitelli()
+coe_Capitelli['CO']
+# %%
+# %%
+def create_split_dict_theorets():
+    # To improve the accuracy of polynomial fit, the temperature has been divided into several intervls
+    # The split points are used for determining the interval
+    split_list=[['GeH4']]
+    split=[[1]]    
+    split_dict=dict()
+    for i in range(len(split_list)):
+        for j in range(len(split_list[i])):
+            if split_list[i][j] not in split_dict:
+                split_dict[split_list[i][j]]=split[i]
+    return split_dict
+
+# %%
+def get_Cp_theorets(R,split_dict):
+    Cp_dict=dict()
+    Tmax_dict=dict()
+    path = "Other_Cp/Theorets"
+    files= os.listdir(path) 
+    for file in tqdm(files): 
+        if ".txt" in file:
+            if not os.path.isdir(file): 
+                filename=path+"/"+file
+                species=file.split(".")[0]
+                print(species)
+                storepath="Cp_results"
+                storename=storepath+"/"+species+".csv"
+                # Read partition functions from database
+                T,Q=np.loadtxt(filename,usecols=(0,1),unpack=True)
+
+                # Get the value of split points
+                # The default split point is 200 where the specific heat starts
+                if species in split_dict:
+                    split=split_dict[species]
+                else:
+                    split=[200]
+
+                # Divide the original data into intervals
+                T_interval=[]
+                Q_interval=[]
+                for i in range(len(split)):
+                    if i < len(split)-1:
+                        if split[i]<split[i+1]:
+                            T_interval.append(T[(split[i]-1):split[i+1]])
+                            Q_interval.append(Q[(split[i]-1):split[i+1]])
+                    else:
+                        T_interval.append(T[(split[i]-1):])
+                        Q_interval.append(Q[(split[i]-1):])
+
+                # Calculate Cp interval by interval
+                for k in range(len(T_interval)):
+                    x=T_interval[k]
+                    y=Q_interval[k]
+
+                    # Determine the degree of the fitting polynomial
+                    n=0
+                    error_min=10e20
+                    for i in range(25):
+                        t=i+1
+                        z1 = np.polyfit(x,y,t) 
+                        p1= np.poly1d(z1)
+                        Qvals = p1(x)
+                        error=np.mean(np.abs(Qvals-y))
+                        if error < error_min:
+                            error_min=error
+                            n=t   
+
+                    # Polyfit the value to get derivative
+                    z1 = np.polyfit(x,y,n) 
+                    p1= np.poly1d(z1)
+                    Qvals = p1(x)
+                    dfx = p1.deriv() 
+                    ddfx = dfx.deriv()
+                    dQ=dfx(x)
+                    ddQ=ddfx(x)
+
+                    # Calculate specific heat
+                    Q1=x*dQ
+                    Q2=(x**2)*ddQ+2*Q1
+                    Cp_temp=R*((Q2/y)-(Q1/y)**2)+(5/2)*R
+                    for i in range(len(x)):
+                        t=float(x[i])    
+                        cp=float(Cp_temp[i])  
+                        if species in Cp_dict:
+                            Cp_dict[species][t]=cp
+                        else:
+                            Cp_dict[species]=dict()
+                            Cp_dict[species][t]=cp 
+
+                # Store Cp results to csv files
+                Cpdict_temp=Cp_dict[species]            
+                list_sorted=sorted(Cpdict_temp.items(),key=lambda item:item[0])
+                T_this=[]
+                Cp_this=[]
+                for i in range(len(list_sorted)):
+                    T_this.append(list_sorted[i][0])
+                    Cp_this.append(list_sorted[i][1])
+                # Cp_df=pd.DataFrame({'T(K)': T_this, 'Cp_Thiswork': Cp_this})
+                # Cp_df.to_csv(storename,index=False)
+
+                # Store the maximum temperature in HITRAN database
+                Tmax_this=T_this[-1]
+                Tmax=min(Tmax_this,6000)
+                Tmax_dict[species]=Tmax
+            
+    return Cp_dict
+
+# %%
+R=8.314 # Universal gas constant
+split_dict_theorets=create_split_dict_theorets()
+Cp_theorets=get_Cp_theorets(R,split_dict_theorets)
+# %%
+Cp_theorets
 # %%
