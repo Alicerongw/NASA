@@ -9,6 +9,111 @@ import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 from scipy.optimize import curve_fit
 
+def create_split_dict_theorets():
+    # To improve the accuracy of polynomial fit, the temperature has been divided into several intervls
+    # The split points are used for determining the interval
+    split_list=[['GeH4']]
+    split=[[1]]    
+    split_dict=dict()
+    for i in range(len(split_list)):
+        for j in range(len(split_list[i])):
+            if split_list[i][j] not in split_dict:
+                split_dict[split_list[i][j]]=split[i]
+    return split_dict
+
+
+def get_Cp_theorets(R,split_dict):
+    Cp_dict=dict()
+    Tmax_dict=dict()
+    path = "Other_Cp/Theorets"
+    files= os.listdir(path) 
+    for file in tqdm(files): 
+        if ".txt" in file:
+            if not os.path.isdir(file): 
+                filename=path+"/"+file
+                species=file.split(".")[0]
+                print(species)
+                storepath="Cp_results"
+                storename=storepath+"/"+species+".csv"
+                # Read partition functions from database
+                T,Q=np.loadtxt(filename,usecols=(0,1),unpack=True)
+
+                # Get the value of split points
+                # The default split point is 200 where the specific heat starts
+                if species in split_dict:
+                    split=split_dict[species]
+                else:
+                    split=[200]
+
+                # Divide the original data into intervals
+                T_interval=[]
+                Q_interval=[]
+                for i in range(len(split)):
+                    if i < len(split)-1:
+                        if split[i]<split[i+1]:
+                            T_interval.append(T[(split[i]-1):split[i+1]])
+                            Q_interval.append(Q[(split[i]-1):split[i+1]])
+                    else:
+                        T_interval.append(T[(split[i]-1):])
+                        Q_interval.append(Q[(split[i]-1):])
+
+                # Calculate Cp interval by interval
+                for k in range(len(T_interval)):
+                    x=T_interval[k]
+                    y=Q_interval[k]
+
+                    # Determine the degree of the fitting polynomial
+                    n=0
+                    error_min=10e20
+                    for i in range(25):
+                        t=i+1
+                        z1 = np.polyfit(x,y,t) 
+                        p1= np.poly1d(z1)
+                        Qvals = p1(x)
+                        error=np.mean(np.abs(Qvals-y))
+                        if error < error_min:
+                            error_min=error
+                            n=t   
+
+                    # Polyfit the value to get derivative
+                    z1 = np.polyfit(x,y,n) 
+                    p1= np.poly1d(z1)
+                    Qvals = p1(x)
+                    dfx = p1.deriv() 
+                    ddfx = dfx.deriv()
+                    dQ=dfx(x)
+                    ddQ=ddfx(x)
+
+                    # Calculate specific heat
+                    Q1=x*dQ
+                    Q2=(x**2)*ddQ+2*Q1
+                    Cp_temp=R*((Q2/y)-(Q1/y)**2)+(5/2)*R
+                    for i in range(len(x)):
+                        t=float(x[i])    
+                        cp=float(Cp_temp[i])  
+                        if species in Cp_dict:
+                            Cp_dict[species][t]=cp
+                        else:
+                            Cp_dict[species]=dict()
+                            Cp_dict[species][t]=cp 
+
+                # Store Cp results to csv files
+                Cpdict_temp=Cp_dict[species]            
+                list_sorted=sorted(Cpdict_temp.items(),key=lambda item:item[0])
+                T_this=[]
+                Cp_this=[]
+                for i in range(len(list_sorted)):
+                    T_this.append(list_sorted[i][0])
+                    Cp_this.append(list_sorted[i][1])
+                # Cp_df=pd.DataFrame({'T(K)': T_this, 'Cp_Thiswork': Cp_this})
+                # Cp_df.to_csv(storename,index=False)
+
+                # Store the maximum temperature in HITRAN database
+                Tmax_this=T_this[-1]
+                Tmax=min(Tmax_this,6000)
+                Tmax_dict[species]=Tmax
+            
+    return Cp_dict
 
 
 # Create the dictionary storing the split points for each species
@@ -452,6 +557,14 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
             T_Gurvich,Cp_Gurvich=np.loadtxt("Other_Cp/O2_Gurvich.txt",usecols=(0,1),unpack=True)
             plt.scatter(T_Gurvich,Cp_Gurvich,color="orange",marker="x",label="Gurvich")
 
+        if species=='H2O2':
+            T_Chao,Cp_Chao=np.loadtxt("Other_Cp/H2O2_Chao.txt",usecols=(0,1),unpack=True)
+            plt.plot(T_Chao,Cp_Chao,color="orange",label="Chao et.al")
+
+        if species=='CH3OH':
+            T_Chao,Cp_Chao=np.loadtxt("Other_Cp/CH3OH_Chao.txt",usecols=(0,1),unpack=True)
+            plt.plot(T_Chao,Cp_Chao,color="orange",label="Chao et.al")
+
         if species=='NH3':
             other_data=True
             T_SS,Cp_SS=np.loadtxt("Other_Cp/NH3_Sousa_Silva.txt",usecols=(0,1),unpack=True) 
@@ -720,6 +833,8 @@ if __name__ == '__main__':
     Cp_dict,Tmax_hitran=get_Cp(R,split_dict)
 
     # Read the specific heat results from other sources
+    split_dict_theorets=create_split_dict_theorets()
+    Cp_theorets=get_Cp_theorets(R,split_dict_theorets)
     Cp_JANAF=get_JANAF()
     coe_Capitelli=get_Capitelli()
     coe_Burcat=get_Burcat()
@@ -747,111 +862,7 @@ coe_Capitelli=get_Capitelli()
 coe_Capitelli['CO']
 # %%
 # %%
-def create_split_dict_theorets():
-    # To improve the accuracy of polynomial fit, the temperature has been divided into several intervls
-    # The split points are used for determining the interval
-    split_list=[['GeH4']]
-    split=[[1]]    
-    split_dict=dict()
-    for i in range(len(split_list)):
-        for j in range(len(split_list[i])):
-            if split_list[i][j] not in split_dict:
-                split_dict[split_list[i][j]]=split[i]
-    return split_dict
 
-# %%
-def get_Cp_theorets(R,split_dict):
-    Cp_dict=dict()
-    Tmax_dict=dict()
-    path = "Other_Cp/Theorets"
-    files= os.listdir(path) 
-    for file in tqdm(files): 
-        if ".txt" in file:
-            if not os.path.isdir(file): 
-                filename=path+"/"+file
-                species=file.split(".")[0]
-                print(species)
-                storepath="Cp_results"
-                storename=storepath+"/"+species+".csv"
-                # Read partition functions from database
-                T,Q=np.loadtxt(filename,usecols=(0,1),unpack=True)
-
-                # Get the value of split points
-                # The default split point is 200 where the specific heat starts
-                if species in split_dict:
-                    split=split_dict[species]
-                else:
-                    split=[200]
-
-                # Divide the original data into intervals
-                T_interval=[]
-                Q_interval=[]
-                for i in range(len(split)):
-                    if i < len(split)-1:
-                        if split[i]<split[i+1]:
-                            T_interval.append(T[(split[i]-1):split[i+1]])
-                            Q_interval.append(Q[(split[i]-1):split[i+1]])
-                    else:
-                        T_interval.append(T[(split[i]-1):])
-                        Q_interval.append(Q[(split[i]-1):])
-
-                # Calculate Cp interval by interval
-                for k in range(len(T_interval)):
-                    x=T_interval[k]
-                    y=Q_interval[k]
-
-                    # Determine the degree of the fitting polynomial
-                    n=0
-                    error_min=10e20
-                    for i in range(25):
-                        t=i+1
-                        z1 = np.polyfit(x,y,t) 
-                        p1= np.poly1d(z1)
-                        Qvals = p1(x)
-                        error=np.mean(np.abs(Qvals-y))
-                        if error < error_min:
-                            error_min=error
-                            n=t   
-
-                    # Polyfit the value to get derivative
-                    z1 = np.polyfit(x,y,n) 
-                    p1= np.poly1d(z1)
-                    Qvals = p1(x)
-                    dfx = p1.deriv() 
-                    ddfx = dfx.deriv()
-                    dQ=dfx(x)
-                    ddQ=ddfx(x)
-
-                    # Calculate specific heat
-                    Q1=x*dQ
-                    Q2=(x**2)*ddQ+2*Q1
-                    Cp_temp=R*((Q2/y)-(Q1/y)**2)+(5/2)*R
-                    for i in range(len(x)):
-                        t=float(x[i])    
-                        cp=float(Cp_temp[i])  
-                        if species in Cp_dict:
-                            Cp_dict[species][t]=cp
-                        else:
-                            Cp_dict[species]=dict()
-                            Cp_dict[species][t]=cp 
-
-                # Store Cp results to csv files
-                Cpdict_temp=Cp_dict[species]            
-                list_sorted=sorted(Cpdict_temp.items(),key=lambda item:item[0])
-                T_this=[]
-                Cp_this=[]
-                for i in range(len(list_sorted)):
-                    T_this.append(list_sorted[i][0])
-                    Cp_this.append(list_sorted[i][1])
-                # Cp_df=pd.DataFrame({'T(K)': T_this, 'Cp_Thiswork': Cp_this})
-                # Cp_df.to_csv(storename,index=False)
-
-                # Store the maximum temperature in HITRAN database
-                Tmax_this=T_this[-1]
-                Tmax=min(Tmax_this,6000)
-                Tmax_dict[species]=Tmax
-            
-    return Cp_dict
 
 # %%
 R=8.314 # Universal gas constant
