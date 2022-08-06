@@ -556,7 +556,14 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
             plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
             T_Gurvich,Cp_Gurvich=np.loadtxt("Other_Cp/O2_Gurvich.txt",usecols=(0,1),unpack=True)
             plt.scatter(T_Gurvich,Cp_Gurvich,color="orange",marker="x",label="Gurvich")
-
+            T_Jaffe,Cp_Jaffe=np.loadtxt("Other_Cp/O2_Jaffe.txt",usecols=(0,1),unpack=True)
+            plt.scatter(T_Jaffe,Cp_Jaffe,color="gray",marker="x",label="Jaffe")
+        if species=='N2':
+            T_Jaffe,Cp_Jaffe=np.loadtxt("Other_Cp/N2_Jaffe.txt",usecols=(0,1),unpack=True)
+            plt.scatter(T_Jaffe,Cp_Jaffe,color="gray",marker="x",label="Jaffe")
+        if species=='NO':
+            T_Jaffe,Cp_Jaffe=np.loadtxt("Other_Cp/NO_Jaffe.txt",usecols=(0,1),unpack=True)
+            plt.scatter(T_Jaffe,Cp_Jaffe,color="gray",marker="x",label="Jaffe")
         if species=='H2O2':
             T_Chao,Cp_Chao=np.loadtxt("Other_Cp/H2O2_Chao.txt",usecols=(0,1),unpack=True)
             plt.plot(T_Chao,Cp_Chao,color="orange",label="Chao et.al")
