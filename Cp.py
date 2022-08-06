@@ -253,7 +253,7 @@ def get_JANAF():
 # Generate a dictionary storing the specific heat fit coefficients from Capitelli
 def get_Capitelli(): 
     Capitelli=np.loadtxt("Other_Cp/Capitelli_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
-    Capitelli_specials=['CO','CO2','N2','NO','NO+','NO2','N2O','O2','O3']
+    Capitelli_specials=['CO','CO2','N2','NO','NO+','NO2','N2O','O2','O3','H2']
     coe_Capitelli=dict()
     for i in range(len(Capitelli_specials)):
         n=i*3
@@ -512,15 +512,18 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
 
         if species in coe_Capitelli:
             other_data=True
+            T_middle=1000
+            if species =='H2':
+                T_middle=500
             if Tmax<=1000:
                 x_Ca=np.arange(Tmin, Tmax+1., 1.0)
                 coefficient_Ca=coe_Capitelli[species][0]
                 Cp_fit_Ca=get_polynomial_results(coefficient_Ca,x_Ca)
             else:
-                x_Ca1=np.arange(Tmin, 1000, 1.0)
+                x_Ca1=np.arange(Tmin, T_middle, 1.0)
                 coefficient_Ca1=coe_Capitelli[species][0]
                 Cp_fit_Ca1=get_polynomial_results(coefficient_Ca1,x_Ca1)
-                x_Ca2=np.arange(1000, 3000, 1.0)
+                x_Ca2=np.arange(T_middle, 3000, 1.0)
                 coefficient_Ca2=coe_Capitelli[species][1]
                 Cp_fit_Ca2=get_polynomial_results(coefficient_Ca2,x_Ca2)
                 x_Ca3=np.arange(3000, Tmax+1., 1.0)
