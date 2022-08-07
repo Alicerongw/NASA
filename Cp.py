@@ -862,7 +862,7 @@ coe_Burcat.keys()
 # %%
 coe_Burcat['GeH4']
 # %%
-diff_dict['HCN']
+diff_dict['HBr']
 # %%
 diff_dict['CS']
 # %%
