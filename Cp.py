@@ -284,6 +284,22 @@ def get_Burcat():
             coe_Burcat[species]=coefficients_Burcat
     return coe_Burcat
 
+# Generate a dictionary storing the specific heat fit coefficients from Barklem
+def get_Barklem(): 
+    Barklem=np.loadtxt("Other_Cp/Barklem_fit.csv",delimiter=",",usecols=(1,2,3,4,5,6,7))
+    Barklem_specials=['ClO','CO','CS','H2','HBr','HCl','HF','HI','N2','NO','O2','OH','SO']
+    coe_Barklem=dict()
+    for i in range(len(Barklem_specials)):
+        n=i*2
+        species=Barklem_specials[i]
+        coefficients_Barklem = np.zeros([2, 7])
+        for ii in range(2):
+            coefficients_Barklem[ii,]=Barklem[n]
+            n+=1
+        if species not in coe_Barklem:
+            coe_Barklem[species]=coefficients_Barklem
+    return coe_Barklem
+
 # Read and store the coefficients from original nasa glenn polynomials
 def get_nasa(Cp_dict):
 
@@ -431,7 +447,7 @@ def compare_difference(di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_
     return diff_dict  
 
 # Using plots to compare the results with existing data
-def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,Tmax_this,Cp_theorets):
+def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,Cp_theorets):
     di_J_dict=dict()
     di_nasa_dict=dict()
     di_Ca_dict=dict()
@@ -510,6 +526,29 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
                 di_Burcat_dict[species]=T_di_Burcat
             plt.plot(x_Burcat,Cp_fit_Burcat,color='green',label="Burcat") 
 
+        # plot specific heat using original nasa glenn polynomials
+        if species in coe_Barklem:
+            other_data=True
+            if Tmax<=1000:
+                x_Barklem=np.arange(298.15, Tmax+1., 1.0)
+                coefficient_Barklem=coe_Barklem[species][0]
+                Cp_fit_Barklem=get_polynomial_results(coefficient_Barklem,x_Barklem)
+            else:
+                x_Barklem1=np.arange(298.15, 1000, 1.0)
+                coefficient_Barklem1=coe_Barklem[species][0]
+                Cp_fit_Barklem1=get_polynomial_results(coefficient_Barklem1,x_Barklem1)
+                x_Barklem2=np.arange(1000, Tmax+1., 1.0)
+                coefficient_Barklem2=coe_Barklem[species][1]
+                Cp_fit_Barklem2=get_polynomial_results(coefficient_Barklem2,x_Barklem2)
+                x_Barklem=np.hstack((x_Barklem1,x_Barklem2))
+                Cp_fit_Barklem=np.hstack(( Cp_fit_Barklem1, Cp_fit_Barklem2))
+
+            # T_Burcat_di,di_Burcat=get_difference(Cp_dict,x_Burcat,Cp_fit_Burcat,species)
+            # T_di_Burcat=np.vstack((T_Burcat_di,di_Burcat))
+            # if species not in di_Burcat_dict:
+            #     di_Burcat_dict[species]=T_di_Burcat
+            plt.plot(x_Barklem,Cp_fit_Barklem,color='orange',label="Barklem") 
+
         if species in coe_Capitelli:
             other_data=True
             T_middle=1000
@@ -558,7 +597,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
             T_di_Furtenbacher_O2=np.vstack((T_Furtenbacher_di_O2,di_Furtenbacher_O2))
             plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
             T_Gurvich,Cp_Gurvich=np.loadtxt("Other_Cp/O2_Gurvich.txt",usecols=(0,1),unpack=True)
-            plt.scatter(T_Gurvich,Cp_Gurvich,color="orange",marker="x",label="Gurvich")
+            plt.scatter(T_Gurvich,Cp_Gurvich,color="hotpink",marker="x",label="Gurvich")
             T_Jaffe,Cp_Jaffe=np.loadtxt("Other_Cp/O2_Jaffe.txt",usecols=(0,1),unpack=True)
             plt.scatter(T_Jaffe,Cp_Jaffe,color="gray",marker="x",label="Jaffe")
         if species=='N2':
@@ -765,8 +804,8 @@ def store_coefficients(Tmax_dict,fit_dictionary):
             a7_list.append(coefficient_temp[i][6])
 
         
-    fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
-    fit_data.to_csv("fit_coefficients.csv",index=False)
+    # fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
+    # fit_data.to_csv("fit_coefficients.csv",index=False)
 
 def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
     residual_dict=dict()
@@ -849,9 +888,10 @@ if __name__ == '__main__':
     coe_Capitelli=get_Capitelli()
     coe_Burcat=get_Burcat()
     coe_nasa=get_nasa(Cp_dict)
+    coe_Barklem=get_Barklem()    
     Tmax_this=get_Tmax_this(Tmax_hitran)
-    di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,Tmax_this,Cp_theorets)
-    diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
+    di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,Cp_theorets)
+    # diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
     # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
     # store_coefficients(Tmax_this,fit_dictionary)
     # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
@@ -871,6 +911,7 @@ diff_dict['HNO3']
 coe_Capitelli=get_Capitelli()
 coe_Capitelli['CO']
 # %%
+coe_Barklem['HI']
 # %%
 
 
