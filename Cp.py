@@ -215,8 +215,8 @@ def get_Cp(R,split_dict):
                 for i in range(len(list_sorted)):
                     T_this.append(list_sorted[i][0])
                     Cp_this.append(list_sorted[i][1])
-                # Cp_df=pd.DataFrame({'T(K)': T_this, 'Cp_Thiswork': Cp_this})
-                # Cp_df.to_csv(storename,index=False)
+                Cp_df=pd.DataFrame({'T(K)': T_this, 'Cp_Thiswork': Cp_this})
+                Cp_df.to_csv(storename,index=False)
 
                 # Store the maximum temperature in HITRAN database
                 Tmax_this=T_this[-1]
@@ -250,23 +250,23 @@ def get_JANAF():
                         Cp_JANAF[species][t]=cp 
     return Cp_JANAF
 
-# Generate a dictionary storing the specific heat fit coefficients from Capitelli
-def get_Capitelli(): 
-    Capitelli=np.loadtxt("Other_Cp/Capitelli_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
-    Capitelli_specials=['CO','CO2','N2','NO','NO+','NO2','N2O','O2','O3','H2']
-    coe_Capitelli=dict()
-    for i in range(len(Capitelli_specials)):
+# Generate a dictionary storing the specific heat fit coefficients from ESA
+def get_ESA(): 
+    ESA=np.loadtxt("Other_Cp/ESA_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
+    ESA_specials=['CO','CO2','N2','NO','NO+','NO2','N2O','O2','O3','H2']
+    coe_ESA=dict()
+    for i in range(len(ESA_specials)):
         n=i*3
-        species=Capitelli_specials[i]
+        species=ESA_specials[i]
         coefficients_Ca = np.zeros([3, 7])
         for ii in range(3):
             for j in range(7):
-                Capitelli[n][j]=Capitelli[n][j]*10**((-5)*(j-2))
-            coefficients_Ca[ii,]=Capitelli[n]
+                ESA[n][j]=ESA[n][j]*10**((-5)*(j-2))
+            coefficients_Ca[ii,]=ESA[n]
             n+=1
-        if species not in coe_Capitelli:
-            coe_Capitelli[species]=coefficients_Ca
-    return coe_Capitelli
+        if species not in coe_ESA:
+            coe_ESA[species]=coefficients_Ca
+    return coe_ESA
 
 # Generate a dictionary storing the specific heat fit coefficients from Burcat
 def get_Burcat(): 
@@ -447,7 +447,7 @@ def compare_difference(di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_
     return diff_dict  
 
 # Using plots to compare the results with existing data
-def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,Cp_theorets):
+def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,Cp_theorets):
     di_J_dict=dict()
     di_nasa_dict=dict()
     di_Ca_dict=dict()
@@ -549,24 +549,24 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
             #     di_Burcat_dict[species]=T_di_Burcat
             plt.plot(x_Barklem,Cp_fit_Barklem,color='orange',label="Barklem") 
 
-        if species in coe_Capitelli:
+        if species in coe_ESA:
             other_data=True
             T_middle=1000
             if species =='H2':
                 T_middle=500
             if Tmax<=1000:
                 x_Ca=np.arange(Tmin, Tmax+1., 1.0)
-                coefficient_Ca=coe_Capitelli[species][0]
+                coefficient_Ca=coe_ESA[species][0]
                 Cp_fit_Ca=get_polynomial_results(coefficient_Ca,x_Ca)
             else:
                 x_Ca1=np.arange(Tmin, T_middle, 1.0)
-                coefficient_Ca1=coe_Capitelli[species][0]
+                coefficient_Ca1=coe_ESA[species][0]
                 Cp_fit_Ca1=get_polynomial_results(coefficient_Ca1,x_Ca1)
                 x_Ca2=np.arange(T_middle, 3000, 1.0)
-                coefficient_Ca2=coe_Capitelli[species][1]
+                coefficient_Ca2=coe_ESA[species][1]
                 Cp_fit_Ca2=get_polynomial_results(coefficient_Ca2,x_Ca2)
                 x_Ca3=np.arange(3000, Tmax+1., 1.0)
-                coefficient_Ca3=coe_Capitelli[species][2]
+                coefficient_Ca3=coe_ESA[species][2]
                 Cp_fit_Ca3=get_polynomial_results(coefficient_Ca3,x_Ca3)
                 x_Ca=np.hstack((x_Ca1,x_Ca2,x_Ca3))
                 Cp_fit_Ca=np.hstack(( Cp_fit_Ca1, Cp_fit_Ca2,Cp_fit_Ca3))
@@ -575,7 +575,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
             T_di_Ca=np.vstack((T_Ca_di,di_Ca))
             if species not in di_Ca_dict:
                 di_Ca_dict[species]=T_di_Ca
-            plt.plot(x_Ca,Cp_fit_Ca,color="green",label="Capitelli et.al")  
+            plt.plot(x_Ca,Cp_fit_Ca,color="green",label="ESA")  
 
         if species=='H2O':
             T_VT,Cp_VT=np.loadtxt("Other_Cp/H2O_Vidler_Tennyson.txt",usecols=(0,1),unpack=True) 
@@ -674,7 +674,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
         plt.ylabel('$C_{p}$')
         plt.xlabel('T(K)')
         plt.title('Specific Heat Fit For '+species)
-        # plt.savefig(storename)
+        plt.savefig(storename)
         plt.show() 
 
         if other_data:
@@ -683,8 +683,8 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
                 plt.plot(T_J_di,di_J,color="blue",label="JANAF")  
             if species in coe_nasa:
                 plt.plot(T_nasa_di,di_nasa,color="black",label="NASA Glenn") 
-            if species in coe_Capitelli:
-                plt.plot(T_Ca_di,di_Ca,color="green",label="Capitelli et.al") 
+            if species in coe_ESA:
+                plt.plot(T_Ca_di,di_Ca,color="green",label="ESA") 
             if species in coe_Burcat:
                 plt.plot(T_Burcat_di,di_Burcat,color='green',label="Burcat")                 
             if species=='H2O':
@@ -804,8 +804,8 @@ def store_coefficients(Tmax_dict,fit_dictionary):
             a7_list.append(coefficient_temp[i][6])
 
         
-    # fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
-    # fit_data.to_csv("fit_coefficients.csv",index=False)
+    fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
+    fit_data.to_csv("Fit_coefficients.csv",index=False)
 
 def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
     residual_dict=dict()
@@ -885,12 +885,12 @@ if __name__ == '__main__':
     split_dict_theorets=create_split_dict_theorets()
     Cp_theorets=get_Cp_theorets(R,split_dict_theorets)
     Cp_JANAF=get_JANAF()
-    coe_Capitelli=get_Capitelli()
+    coe_ESA=get_ESA()
     coe_Burcat=get_Burcat()
     coe_nasa=get_nasa(Cp_dict)
     coe_Barklem=get_Barklem()    
     Tmax_this=get_Tmax_this(Tmax_hitran)
-    di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,Cp_theorets)
+    di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,Cp_theorets)
     diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
     fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
     store_coefficients(Tmax_this,fit_dictionary)
