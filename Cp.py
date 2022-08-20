@@ -674,44 +674,44 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
         plt.ylabel('$C_{p}$')
         plt.xlabel('T(K)')
         plt.title('Specific Heat Fit For '+species)
-        plt.savefig(storename)
+        # plt.savefig(storename)
         plt.show() 
 
-        if other_data:
-            plt.figure(figsize=(8,6))
-            if species in Cp_JANAF:
-                plt.plot(T_J_di,di_J,color="blue",label="JANAF")  
-            if species in coe_nasa:
-                plt.plot(T_nasa_di,di_nasa,color="black",label="NASA Glenn") 
-            if species in coe_ESA:
-                plt.plot(T_Ca_di,di_Ca,color="green",label="ESA") 
-            if species in coe_Burcat:
-                plt.plot(T_Burcat_di,di_Burcat,color='green',label="Burcat")                 
-            if species=='H2O':
-                plt.plot(T_VT_di,di_VT,color='orange',label="Vidler & Tennyson")
-                plt.plot(T_Harris_di,di_Harris,color='aqua',label="Harris et.al")
-                plt.plot(T_Furtenbacher_di,di_Furtenbacher,color='purple',label="Furtenbacher et.al")
-            if species=='O2':
-                plt.plot(T_Furtenbacher_di_O2,di_Furtenbacher_O2,color='purple',label="Furtenbacher et.al")
-            if species=='NH3':
-                plt.plot(T_SS_di,di_SS_N,color='deepskyblue',label="C. Sousa-Silva et al.")
-            if species=='PH3':
-                plt.plot(T_SS_di,di_SS_P,color='deepskyblue',label="C. Sousa-Silva et al.")
+        # if other_data:
+        #     plt.figure(figsize=(8,6))
+        #     if species in Cp_JANAF:
+        #         plt.plot(T_J_di,di_J,color="blue",label="JANAF")  
+        #     if species in coe_nasa:
+        #         plt.plot(T_nasa_di,di_nasa,color="black",label="NASA Glenn") 
+        #     if species in coe_ESA:
+        #         plt.plot(T_Ca_di,di_Ca,color="green",label="ESA") 
+        #     if species in coe_Burcat:
+        #         plt.plot(T_Burcat_di,di_Burcat,color='green',label="Burcat")                 
+        #     if species=='H2O':
+        #         plt.plot(T_VT_di,di_VT,color='orange',label="Vidler & Tennyson")
+        #         plt.plot(T_Harris_di,di_Harris,color='aqua',label="Harris et.al")
+        #         plt.plot(T_Furtenbacher_di,di_Furtenbacher,color='purple',label="Furtenbacher et.al")
+        #     if species=='O2':
+        #         plt.plot(T_Furtenbacher_di_O2,di_Furtenbacher_O2,color='purple',label="Furtenbacher et.al")
+        #     if species=='NH3':
+        #         plt.plot(T_SS_di,di_SS_N,color='deepskyblue',label="C. Sousa-Silva et al.")
+        #     if species=='PH3':
+        #         plt.plot(T_SS_di,di_SS_P,color='deepskyblue',label="C. Sousa-Silva et al.")
 
 
-            # plt.axhline(y=1.0,c='gray')
-            # plt.axhline(y=2.0,c='gray')
-            # plt.axhline(y=3.0,c='gray')
-            # plt.axhline(y=5.0,c='gray')
-            # storepath="Cp_Difference"
-            storepath="Difference(%)"
-            storename=storepath+"/"+species        
-            plt.legend()
-            plt.ylabel('Difference(%)')
-            plt.xlabel('T(K)')
-            plt.title('Specific Heat Difference(%) For '+species)
-            # plt.savefig(storename)
-            plt.show() 
+        #     # plt.axhline(y=1.0,c='gray')
+        #     # plt.axhline(y=2.0,c='gray')
+        #     # plt.axhline(y=3.0,c='gray')
+        #     # plt.axhline(y=5.0,c='gray')
+        #     # storepath="Cp_Difference"
+        #     storepath="Difference(%)"
+        #     storename=storepath+"/"+species        
+        #     plt.legend()
+        #     plt.ylabel('Difference(%)')
+        #     plt.xlabel('T(K)')
+        #     plt.title('Specific Heat Difference(%) For '+species)
+        #     # plt.savefig(storename)
+        #     plt.show() 
 
     return di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P
 
@@ -765,13 +765,7 @@ def store_coefficients(Tmax_dict,fit_dictionary):
     molecule_list=[]
     Tmin_list=[]
     Tmax_list=[]
-    a1_list=[]
-    a2_list=[]
-    a3_list=[]
-    a4_list=[]
-    a5_list=[]
-    a6_list=[]
-    a7_list=[]
+    coe_list = [[] for i in range(7)]
 
     for molecule in fit_dictionary:
         Tmin=200.
@@ -795,16 +789,10 @@ def store_coefficients(Tmax_dict,fit_dictionary):
                 Tmin_list.append(1000)
                 Tmax_list.append(Tmax)
             molecule_list.append(molecule)
-            a1_list.append(coefficient_temp[i][0])
-            a2_list.append(coefficient_temp[i][1])
-            a3_list.append(coefficient_temp[i][2])
-            a4_list.append(coefficient_temp[i][3])
-            a5_list.append(coefficient_temp[i][4])
-            a6_list.append(coefficient_temp[i][5])
-            a7_list.append(coefficient_temp[i][6])
-
+            for ii in range(7):
+                coe_list[ii].append(coefficient_temp[i][ii])
         
-    fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':a1_list,'a2': a2_list,'a3': a3_list,'a4': a4_list,'a5': a5_list,'a6': a6_list,'a7': a7_list})
+    fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':coe_list[0],'a2': coe_list[1],'a3': coe_list[2],'a4': coe_list[3],'a5': coe_list[4],'a6': coe_list[5],'a7': coe_list[6]})
     fit_data.to_csv("Fit_coefficients.csv",index=False)
 
 def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
@@ -923,4 +911,8 @@ Cp_theorets=get_Cp_theorets(R,split_dict_theorets)
 Cp_theorets
 # %%
 Cp_JANAF['H2O2']
+# %%
+coe_list
+# %%
+len(coe_list[4])
 # %%
