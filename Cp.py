@@ -692,76 +692,39 @@ if __name__ == '__main__':
     coe_Barklem=get_Barklem()    
     Tmax_this=get_Tmax_this(Tmax_hitran)
     di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,T_Theorets, Cp_Theorets)
-    diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
+    # diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
     fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
-    store_coefficients(Tmax_this,fit_dictionary)
-    residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
+    # store_coefficients(Tmax_this,fit_dictionary)
+    # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 
 #%%
-diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
-coe_Burcat.keys()
-# %%
-coe_Burcat['GeH4']
-# %%
-diff_dict['HBr']
-# %%
-diff_dict['CS']
-# %%
-diff_dict['HNO3']
-# %%
-coe_Capitelli=get_Capitelli()
-coe_Capitelli['CO']
-# %%
-coe_Barklem['HI']
-# %%
+def compare_1000(fit_dictionary,Cp_dict):
+    species_list=[]
+    first_1000_list=[]
+    second_1000_list=[]
+    Tabulated_1000_list=[]
+    difference_list=[]
 
-
-# %%
-R=8.314 # Universal gas constant
-split_dict_theorets=create_split_dict_theorets()
-Cp_theorets=get_Cp_theorets(R,split_dict_theorets)
-# %%
-residual_dict
-
-# %%
-residual_dict
-# %%
-len(fit_dictionary['O2'])
-# %%
-Cp_298_15=get_298_15(fit_dictionary)
-# %%
-fit_dictionary['O2'][0][0]
-# %%
-def get_298_15(fit_dictionary):
-    Cp_standard=dict()
-    for species in fit_dictionary:
+    sorted_list=sorted(fit_dictionary)
+    for ii in range(len(sorted_list)):
+        species=sorted_list[ii]
+        Tmin=200.
+        if species=='NO+':
+            Tmin=298.15
         coefficient_temp=fit_dictionary[species]
-        x=298.15
-        if len(coefficient_temp)==1:
-            coefficients=coefficient_temp
-    
-            Cp_298_15=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
-        else:
-            coefficients=coefficient_temp[0]
-            
-            # Cp_298_15=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
-        if species not in Cp_standard:
-            Cp_standard[species]=Cp_298_15
-    return Cp_standard
+        if len(coefficient_temp)>1:
+            first_1000=get_polynomial_results(coefficient_temp[0],1000)
+            second_1000=get_polynomial_results(coefficient_temp[1],1000)
+            Tabulated_1000=Cp_dict[species][1000]
+            species_list.append(species)
+            first_1000_list.append(first_1000)
+            second_1000_list.append(second_1000)
+            difference_list.append(abs(first_1000-second_1000))
+            Tabulated_1000_list.append(Tabulated_1000)
+    data1000 = pd.DataFrame({'Species': species_list, 'First Cp1000':first_1000_list,'Second Cp1000':second_1000_list,'Tabulated Cp1000':Tabulated_1000_list,'Difference':difference_list})
+    data1000.to_csv("Specific_heat_at_1000K.csv",index=False)
+
 # %%
-get_298_15(fit_dictionary)
-# %%
-coefficient_temp=fit_dictionary['H2O']
-coefficient=coefficient_temp[0]
-# %%
-coefficient[0]
-# %%
-def get_298_15(fit_dictionary):
-    Cp_standard=dict()
-    for species in fit_dictionary:
-        coefficient_temp=fit_dictionary[species][0]
-        Cp_298_15=get_polynomial_results(coefficient_temp,298.15)
-        if species not in Cp_standard:
-            Cp_standard[species]=Cp_298_15
-    return Cp_standard
+compare_1000(fit_dictionary,Cp_dict)
+
 # %%
