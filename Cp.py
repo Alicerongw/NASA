@@ -341,6 +341,24 @@ def compare_difference(di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_
             diff_dict=create_dict(diff_dict,species,sourcename,diff_SS_P) 
     return diff_dict  
 
+# Calculate the specific heat according to NASA polynomial coefficients
+def get_Cp_from_coefficients(coe_dict,Tmin,Tmax,species):
+    if species in coe_dict:
+        if Tmax<=1000:
+            x=np.arange(Tmin, Tmax+1., 1.0)
+            coefficient=coe_dict[species][0]
+            Cp_fit=get_polynomial_results(coefficient,x)
+        else:
+            x1=np.arange(Tmin, 1000, 1.0)
+            coefficient1=coe_dict[species][0]
+            Cp_fit1=get_polynomial_results(coefficient1,x1)
+            x2=np.arange(1000, Tmax+1., 1.0)
+            coefficient2=coe_dict[species][1]
+            Cp_fit2=get_polynomial_results(coefficient2,x2)
+            x=np.hstack((x1,x2))
+            Cp_fit=np.hstack(( Cp_fit1, Cp_fit2))
+        return x,Cp_fit
+
 # Using plots to compare the results with existing data
 def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,T_Theorets_GeH4,Cp_Theorets_GeH4):
     di_J_dict=dict()
@@ -375,20 +393,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
 
         # plot specific heat using original nasa glenn polynomials
         if species in coe_nasa:
-            if Tmax<=1000:
-                x_nasa=np.arange(Tmin, Tmax+1., 1.0)
-                coefficient_nasa=coe_nasa[species][0]
-                Cp_fit_nasa=get_polynomial_results(coefficient_nasa,x_nasa)
-            else:
-                x_nasa1=np.arange(Tmin, 1000, 1.0)
-                coefficient_nasa1=coe_nasa[species][0]
-                Cp_fit_nasa1=get_polynomial_results(coefficient_nasa1,x_nasa1)
-                x_nasa2=np.arange(1000, Tmax+1., 1.0)
-                coefficient_nasa2=coe_nasa[species][1]
-                Cp_fit_nasa2=get_polynomial_results(coefficient_nasa2,x_nasa2)
-                x_nasa=np.hstack((x_nasa1,x_nasa2))
-                Cp_fit_nasa=np.hstack(( Cp_fit_nasa1, Cp_fit_nasa2))
-
+            x_nasa,Cp_fit_nasa=get_Cp_from_coefficients(coe_nasa,Tmin,Tmax,species)  
             T_nasa_di,di_nasa=get_difference(Cp_dict,x_nasa,Cp_fit_nasa,species)
             T_di_nasa=np.vstack((T_nasa_di,di_nasa))
             if species not in di_nasa_dict:
@@ -397,20 +402,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
 
         # plot specific heat using original nasa glenn polynomials
         if species in coe_Burcat:
-            if Tmax<=1000:
-                x_Burcat=np.arange(Tmin, Tmax+1., 1.0)
-                coefficient_Burcat=coe_Burcat[species][0]
-                Cp_fit_Burcat=get_polynomial_results(coefficient_Burcat,x_Burcat)
-            else:
-                x_Burcat1=np.arange(Tmin, 1000, 1.0)
-                coefficient_Burcat1=coe_Burcat[species][0]
-                Cp_fit_Burcat1=get_polynomial_results(coefficient_Burcat1,x_Burcat1)
-                x_Burcat2=np.arange(1000, Tmax+1., 1.0)
-                coefficient_Burcat2=coe_Burcat[species][1]
-                Cp_fit_Burcat2=get_polynomial_results(coefficient_Burcat2,x_Burcat2)
-                x_Burcat=np.hstack((x_Burcat1,x_Burcat2))
-                Cp_fit_Burcat=np.hstack(( Cp_fit_Burcat1, Cp_fit_Burcat2))
-
+            x_Burcat,Cp_fit_Burcat=get_Cp_from_coefficients(coe_Burcat,Tmin,Tmax,species)  
             T_Burcat_di,di_Burcat=get_difference(Cp_dict,x_Burcat,Cp_fit_Burcat,species)
             T_di_Burcat=np.vstack((T_Burcat_di,di_Burcat))
             if species not in di_Burcat_dict:
@@ -419,19 +411,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
 
         # plot specific heat using original nasa glenn polynomials
         if species in coe_Barklem:
-            if Tmax<=1000:
-                x_Barklem=np.arange(298.15, Tmax+1., 1.0)
-                coefficient_Barklem=coe_Barklem[species][0]
-                Cp_fit_Barklem=get_polynomial_results(coefficient_Barklem,x_Barklem)
-            else:
-                x_Barklem1=np.arange(298.15, 1000, 1.0)
-                coefficient_Barklem1=coe_Barklem[species][0]
-                Cp_fit_Barklem1=get_polynomial_results(coefficient_Barklem1,x_Barklem1)
-                x_Barklem2=np.arange(1000, Tmax+1., 1.0)
-                coefficient_Barklem2=coe_Barklem[species][1]
-                Cp_fit_Barklem2=get_polynomial_results(coefficient_Barklem2,x_Barklem2)
-                x_Barklem=np.hstack((x_Barklem1,x_Barklem2))
-                Cp_fit_Barklem=np.hstack(( Cp_fit_Barklem1, Cp_fit_Barklem2))
+            x_Barklem,Cp_fit_Barklem=get_Cp_from_coefficients(coe_Barklem,298.15,Tmax,species)            
 
             plt.plot(x_Barklem,Cp_fit_Barklem,color='orange',label="Barklem") 
 
@@ -514,7 +494,6 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
 
 
         # Plot specific heat results in this work 
-
         T=[]
         Cp=[]
         for t in cp_Temp:
@@ -598,6 +577,7 @@ def store_coefficients(Tmax_dict,fit_dictionary):
     species_list=[]
     Tmin_list=[]
     Tmax_list=[]
+    Cp_298_15_list=[]
     coe_list = [[] for i in range(7)]
 
     sorted_list=sorted(fit_dictionary)
@@ -607,6 +587,7 @@ def store_coefficients(Tmax_dict,fit_dictionary):
         if species=='NO+':
             Tmin=298.15
         coefficient_temp=fit_dictionary[species]
+        Cp_298_15=get_polynomial_results(coefficient_temp[0],298.15)   
         Tmax=Tmax_dict[species]
         if Tmax<=1000:
             temp_intervals=1
@@ -620,14 +601,17 @@ def store_coefficients(Tmax_dict,fit_dictionary):
                     Tmax_list.append(Tmax)
                 else:
                     Tmax_list.append(1000)
+                Cp_298_15_list.append(Cp_298_15)
+                species_list.append(species)
             if i ==1:
                 Tmin_list.append(1000)
                 Tmax_list.append(Tmax)
-            species_list.append(species)
+                Cp_298_15_list.append(' ')
+                species_list.append(' ')
             for ii in range(7):
                 coe_list[ii].append(coefficient_temp[i][ii])
         
-    fit_data = pd.DataFrame({'Species': species_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':coe_list[0],'a2': coe_list[1],'a3': coe_list[2],'a4': coe_list[3],'a5': coe_list[4],'a6': coe_list[5],'a7': coe_list[6]})
+    fit_data = pd.DataFrame({'Species': species_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':coe_list[0],'a2': coe_list[1],'a3': coe_list[2],'a4': coe_list[3],'a5': coe_list[4],'a6': coe_list[5],'a7': coe_list[6],'Cp at 298.15K':Cp_298_15_list})
     fit_data.to_csv("Fit_coefficients.csv",index=False)
 
 def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
@@ -652,20 +636,7 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
                 Cp.append(float(cp_Temp[t]))
 
         # Calculate fitted specific heat
-        if Tmax<=1000:
-            x=np.arange(Tmin,Tmax+1., 1.)
-            coefficient_this=fit_dictionary[species][0]
-            Cp_fit_this=get_polynomial_results(coefficient_this,x)
-        
-        else:
-            x1=np.arange(Tmin,1000.,1.)
-            coefficient_this1=fit_dictionary[species][0]
-            Cp_fit_this1=get_polynomial_results(coefficient_this1,x1)
-            x2=np.arange(1000.,Tmax+1., 1.)
-            coefficient_this2=fit_dictionary[species][1]
-            Cp_fit_this2=get_polynomial_results(coefficient_this2,x2)
-            x=np.hstack((x1,x2))
-            Cp_fit_this=np.hstack(( Cp_fit_this1, Cp_fit_this2))
+        x,Cp_fit_this=get_Cp_from_coefficients(fit_dictionary,Tmin,Tmax,species)
 
         # Compute min max and mean residuals,
         residual= Cp - Cp_fit_this
@@ -754,4 +725,43 @@ residual_dict
 
 # %%
 residual_dict
+# %%
+len(fit_dictionary['O2'])
+# %%
+Cp_298_15=get_298_15(fit_dictionary)
+# %%
+fit_dictionary['O2'][0][0]
+# %%
+def get_298_15(fit_dictionary):
+    Cp_standard=dict()
+    for species in fit_dictionary:
+        coefficient_temp=fit_dictionary[species]
+        x=298.15
+        if len(coefficient_temp)==1:
+            coefficients=coefficient_temp
+    
+            Cp_298_15=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
+        else:
+            coefficients=coefficient_temp[0]
+            
+            # Cp_298_15=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
+        if species not in Cp_standard:
+            Cp_standard[species]=Cp_298_15
+    return Cp_standard
+# %%
+get_298_15(fit_dictionary)
+# %%
+coefficient_temp=fit_dictionary['H2O']
+coefficient=coefficient_temp[0]
+# %%
+coefficient[0]
+# %%
+def get_298_15(fit_dictionary):
+    Cp_standard=dict()
+    for species in fit_dictionary:
+        coefficient_temp=fit_dictionary[species][0]
+        Cp_298_15=get_polynomial_results(coefficient_temp,298.15)
+        if species not in Cp_standard:
+            Cp_standard[species]=Cp_298_15
+    return Cp_standard
 # %%
