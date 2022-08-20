@@ -600,8 +600,9 @@ def store_coefficients(Tmax_dict,fit_dictionary):
     Tmax_list=[]
     coe_list = [[] for i in range(7)]
 
-
-    for species in fit_dictionary:
+    sorted_list=sorted(fit_dictionary)
+    for ii in range(len(sorted_list)):
+        species=sorted_list[ii]
         Tmin=200.
         if species=='NO+':
             Tmin=298.15
@@ -633,7 +634,10 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
     residual_dict=dict()
     species_list=[]
     list_temp= [[] for i in range(3)]
-    for species in tqdm(Cp_dict):
+
+    sorted_list=sorted(Cp_dict)
+    for j in tqdm(range(len(sorted_list))):
+        species=sorted_list[j]
         Tmax=Tmax_this[species]
         Tmin=200.
         if species=='NO+':
