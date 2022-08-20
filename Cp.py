@@ -677,48 +677,13 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
         # plt.savefig(storename)
         plt.show() 
 
-        # if other_data:
-        #     plt.figure(figsize=(8,6))
-        #     if species in Cp_JANAF:
-        #         plt.plot(T_J_di,di_J,color="blue",label="JANAF")  
-        #     if species in coe_nasa:
-        #         plt.plot(T_nasa_di,di_nasa,color="black",label="NASA Glenn") 
-        #     if species in coe_ESA:
-        #         plt.plot(T_Ca_di,di_Ca,color="green",label="ESA") 
-        #     if species in coe_Burcat:
-        #         plt.plot(T_Burcat_di,di_Burcat,color='green',label="Burcat")                 
-        #     if species=='H2O':
-        #         plt.plot(T_VT_di,di_VT,color='orange',label="Vidler & Tennyson")
-        #         plt.plot(T_Harris_di,di_Harris,color='aqua',label="Harris et.al")
-        #         plt.plot(T_Furtenbacher_di,di_Furtenbacher,color='purple',label="Furtenbacher et.al")
-        #     if species=='O2':
-        #         plt.plot(T_Furtenbacher_di_O2,di_Furtenbacher_O2,color='purple',label="Furtenbacher et.al")
-        #     if species=='NH3':
-        #         plt.plot(T_SS_di,di_SS_N,color='deepskyblue',label="C. Sousa-Silva et al.")
-        #     if species=='PH3':
-        #         plt.plot(T_SS_di,di_SS_P,color='deepskyblue',label="C. Sousa-Silva et al.")
-
-
-        #     # plt.axhline(y=1.0,c='gray')
-        #     # plt.axhline(y=2.0,c='gray')
-        #     # plt.axhline(y=3.0,c='gray')
-        #     # plt.axhline(y=5.0,c='gray')
-        #     # storepath="Cp_Difference"
-        #     storepath="Difference(%)"
-        #     storename=storepath+"/"+species        
-        #     plt.legend()
-        #     plt.ylabel('Difference(%)')
-        #     plt.xlabel('T(K)')
-        #     plt.title('Specific Heat Difference(%) For '+species)
-        #     # plt.savefig(storename)
-        #     plt.show() 
-
     return di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P
 
 # Define the nasa polynomial format using for fitting
 def objective(x,a1,a2,a3,a4,a5,a6,a7):
     return R*(a1*x**(-2)+a2*x**(-1)+a3+a4*x+a5*x**2+a6*x**3+a7*x**4)
 
+# Get the NASA polynomial coefficients
 def get_coefficients(Cp_dict,Tmax_this):
     fit_dictionary=dict()
     for species in Cp_dict:
@@ -736,7 +701,7 @@ def get_coefficients(Cp_dict,Tmax_this):
         if species=='NO+':
             Tmin_index=98
         
-        # Fit the specific heat
+        # Fit the specific heat into format of NASA polynomials
         fit_Tinterval=[]
         fit_Cpinterval=[]
         if Tmax<=1000:
@@ -761,6 +726,7 @@ def get_coefficients(Cp_dict,Tmax_this):
         fit_dictionary[species]=coefficients
     return fit_dictionary
 
+# Store the NASA polynomial coefficients in the file 'Fit_coefficients.csv'
 def store_coefficients(Tmax_dict,fit_dictionary):
     molecule_list=[]
     Tmin_list=[]
@@ -792,8 +758,8 @@ def store_coefficients(Tmax_dict,fit_dictionary):
             for ii in range(7):
                 coe_list[ii].append(coefficient_temp[i][ii])
         
-    fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':coe_list[0],'a2': coe_list[1],'a3': coe_list[2],'a4': coe_list[3],'a5': coe_list[4],'a6': coe_list[5],'a7': coe_list[6]})
-    fit_data.to_csv("Fit_coefficients.csv",index=False)
+    # fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':coe_list[0],'a2': coe_list[1],'a3': coe_list[2],'a4': coe_list[3],'a5': coe_list[4],'a6': coe_list[5],'a7': coe_list[6]})
+    # fit_data.to_csv("Fit_coefficients.csv",index=False)
 
 def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
     residual_dict=dict()
@@ -802,7 +768,7 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         Tmin=200.
         if molecule=='NO+':
             Tmin=298
-        # plot specific heat in this work after fitting
+        # Read tabulated results
         cp_Temp=Cp_dict[molecule]
         T=[]
         Cp=[]
@@ -811,23 +777,23 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
                 T.append(float(t))
                 Cp.append(float(cp_Temp[t]))
 
-
-        #plot specific heat in this work after fitting
+        # Calculate fitted specific heat
         if Tmax<=1000:
             x=np.arange(Tmin,Tmax+1., 1.)
             coefficient_this=fit_dictionary[molecule][0]
-            Cp_fit_this=R*(coefficient_this[0]*x**(-2)+coefficient_this[1]*x**(-1)+coefficient_this[2]+coefficient_this[3]*x+coefficient_this[4]*x**2+coefficient_this[5]*x**3+coefficient_this[6]*x**4)
+            Cp_fit_this=get_polynomial_results(coefficient_this,x)
         
         else:
             x1=np.arange(Tmin,1000.,1.)
             coefficient_this1=fit_dictionary[molecule][0]
-            Cp_fit_this1=R*(coefficient_this1[0]*x1**(-2)+coefficient_this1[1]*x1**(-1)+coefficient_this1[2]+coefficient_this1[3]*x1+coefficient_this1[4]*x1**2+coefficient_this1[5]*x1**3+coefficient_this1[6]*x1**4)
+            Cp_fit_this1=get_polynomial_results(coefficient_this1,x1)
             x2=np.arange(1000.,Tmax+1., 1.)
             coefficient_this2=fit_dictionary[molecule][1]
-            Cp_fit_this2=R*(coefficient_this2[0]*x2**(-2)+coefficient_this2[1]*x2**(-1)+coefficient_this2[2]+coefficient_this2[3]*x2+coefficient_this2[4]*x2**2+coefficient_this2[5]*x2**3+coefficient_this2[6]*x2**4)
+            Cp_fit_this2=get_polynomial_results(coefficient_this2,x2)
             x=np.hstack((x1,x2))
             Cp_fit_this=np.hstack(( Cp_fit_this1, Cp_fit_this2))
 
+        # Compute min max and mean residuals,
         residual= Cp - Cp_fit_this
         array_temp=np.zeros(3)
         array_temp[0]=np.min(np.abs(residual))
@@ -837,26 +803,23 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         if molecule not in residual_dict:
             residual_dict[molecule]=array_temp
 
+        # Plot residuals, specific heat before and after fitting on the same figure 
         plt.figure(figsize=(8,6))
         fig,ax1 = plt.subplots()
         ax2 = ax1.twinx()          
         ax1.plot(x,Cp,color="blue",label="Original Cp")
         ax1.plot(x,Cp_fit_this,color="red",label="Fitted Cp")
         ax2.plot(x,residual,color="black")
-        
+        plt.axhline(y=0.0,c="gray")
+
         ax1.set_xlabel('T(k)')    
         ax1.set_ylabel('Cp',color = 'red')   
         ax2.set_ylabel('Residuals',color = 'black')
-
-        plt.axhline(y=0.0,c="gray")
-        # plt.plot(x,residual)    
 
         storepath="Fit_residuals"
         storename=storepath+"/"+molecule
 
         ax1.legend()
-        # plt.ylabel('Residuals')
-        # plt.xlabel('T(K)')
         plt.title('Residuals Plot For '+molecule)
         # plt.savefig(storename)
         plt.show()
