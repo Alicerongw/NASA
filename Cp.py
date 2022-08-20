@@ -60,7 +60,7 @@ def get_Cp(R,split_dict):
                         T_interval.append(T[(split[i]-1):])
                         Q_interval.append(Q[(split[i]-1):])
 
-                # Calculate Cp interval by interval
+                # Calculate Cp interval by intervals
                 for k in range(len(T_interval)):
                     x=T_interval[k]
                     y=Q_interval[k]
@@ -148,6 +148,8 @@ def get_JANAF():
                         Cp_JANAF[species][t]=cp 
     return Cp_JANAF
 
+
+
 # Generate a dictionary storing the specific heat fit coefficients from ESA
 def get_ESA(): 
     ESA=np.loadtxt("Other_Cp/ESA_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
@@ -166,36 +168,32 @@ def get_ESA():
             coe_ESA[species]=coefficients_Ca
     return coe_ESA
 
+# Define the standard process of reading csv files for coefficients
+def read_coefficient_file(data,species_list,interval_number):
+    coe=dict()
+    for i in range(len(species_list)):
+        n=i*interval_number
+        species=species_list[i]
+        coefficients = np.zeros([interval_number, 7])
+        for ii in range(interval_number):
+            coefficients[ii,]=data[n]
+            n+=1
+        if species not in coe:
+            coe[species]=coefficients
+    return coe
+
 # Generate a dictionary storing the specific heat fit coefficients from Burcat
 def get_Burcat(): 
     Burcat=np.loadtxt("Other_Cp/Burcat_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
     Burcat_specials=['CH3Br','CH3I','CH3OH','ClO','ClONO2','COF2','GeH4','H2O2','HBr','HNO3','HO2','HOBr','HOCl','NH3','PH3','OH']
-    coe_Burcat=dict()
-    for i in range(len(Burcat_specials)):
-        n=i*2
-        species=Burcat_specials[i]
-        coefficients_Burcat = np.zeros([2, 7])
-        for ii in range(2):
-            coefficients_Burcat[ii,]=Burcat[n]
-            n+=1
-        if species not in coe_Burcat:
-            coe_Burcat[species]=coefficients_Burcat
+    coe_Burcat=read_coefficient_file(Burcat,Burcat_specials,2)
     return coe_Burcat
 
 # Generate a dictionary storing the specific heat fit coefficients from Barklem
 def get_Barklem(): 
     Barklem=np.loadtxt("Other_Cp/Barklem_fit.csv",delimiter=",",usecols=(1,2,3,4,5,6,7))
     Barklem_specials=['ClO','CO','CS','H2','HBr','HCl','HF','HI','N2','NO','O2','OH','SO']
-    coe_Barklem=dict()
-    for i in range(len(Barklem_specials)):
-        n=i*2
-        species=Barklem_specials[i]
-        coefficients_Barklem = np.zeros([2, 7])
-        for ii in range(2):
-            coefficients_Barklem[ii,]=Barklem[n]
-            n+=1
-        if species not in coe_Barklem:
-            coe_Barklem[species]=coefficients_Barklem
+    coe_Barklem=read_coefficient_file(Barklem,Barklem_specials,2)
     return coe_Barklem
 
 # Read and store the coefficients from original nasa glenn polynomials
@@ -543,7 +541,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
         plt.ylabel('$C_{p}$')
         plt.xlabel('T(K)')
         plt.title('Specific Heat Fit For '+species)
-        # plt.savefig(storename)
+        plt.savefig(storename)
         plt.show() 
 
     return di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P
@@ -597,17 +595,18 @@ def get_coefficients(Cp_dict,Tmax_this):
 
 # Store the NASA polynomial coefficients in the file 'Fit_coefficients.csv'
 def store_coefficients(Tmax_dict,fit_dictionary):
-    molecule_list=[]
+    species_list=[]
     Tmin_list=[]
     Tmax_list=[]
     coe_list = [[] for i in range(7)]
 
-    for molecule in fit_dictionary:
+
+    for species in fit_dictionary:
         Tmin=200.
-        if molecule=='NO+':
+        if species=='NO+':
             Tmin=298.15
-        coefficient_temp=fit_dictionary[molecule]
-        Tmax=Tmax_dict[molecule]
+        coefficient_temp=fit_dictionary[species]
+        Tmax=Tmax_dict[species]
         if Tmax<=1000:
             temp_intervals=1
         else:
@@ -623,22 +622,24 @@ def store_coefficients(Tmax_dict,fit_dictionary):
             if i ==1:
                 Tmin_list.append(1000)
                 Tmax_list.append(Tmax)
-            molecule_list.append(molecule)
+            species_list.append(species)
             for ii in range(7):
                 coe_list[ii].append(coefficient_temp[i][ii])
         
-    # fit_data = pd.DataFrame({'Molecule': molecule_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':coe_list[0],'a2': coe_list[1],'a3': coe_list[2],'a4': coe_list[3],'a5': coe_list[4],'a6': coe_list[5],'a7': coe_list[6]})
-    # fit_data.to_csv("Fit_coefficients.csv",index=False)
+    fit_data = pd.DataFrame({'Species': species_list, 'Tmin':Tmin_list,'Tmax': Tmax_list,'a1':coe_list[0],'a2': coe_list[1],'a3': coe_list[2],'a4': coe_list[3],'a5': coe_list[4],'a6': coe_list[5],'a7': coe_list[6]})
+    fit_data.to_csv("Fit_coefficients.csv",index=False)
 
 def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
     residual_dict=dict()
-    for molecule in tqdm(Cp_dict):
-        Tmax=Tmax_this[molecule]
+    species_list=[]
+    list_temp= [[] for i in range(3)]
+    for species in tqdm(Cp_dict):
+        Tmax=Tmax_this[species]
         Tmin=200.
-        if molecule=='NO+':
+        if species=='NO+':
             Tmin=298
         # Read tabulated results
-        cp_Temp=Cp_dict[molecule]
+        cp_Temp=Cp_dict[species]
         T=[]
         Cp=[]
         for t in cp_Temp:
@@ -649,15 +650,15 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         # Calculate fitted specific heat
         if Tmax<=1000:
             x=np.arange(Tmin,Tmax+1., 1.)
-            coefficient_this=fit_dictionary[molecule][0]
+            coefficient_this=fit_dictionary[species][0]
             Cp_fit_this=get_polynomial_results(coefficient_this,x)
         
         else:
             x1=np.arange(Tmin,1000.,1.)
-            coefficient_this1=fit_dictionary[molecule][0]
+            coefficient_this1=fit_dictionary[species][0]
             Cp_fit_this1=get_polynomial_results(coefficient_this1,x1)
             x2=np.arange(1000.,Tmax+1., 1.)
-            coefficient_this2=fit_dictionary[molecule][1]
+            coefficient_this2=fit_dictionary[species][1]
             Cp_fit_this2=get_polynomial_results(coefficient_this2,x2)
             x=np.hstack((x1,x2))
             Cp_fit_this=np.hstack(( Cp_fit_this1, Cp_fit_this2))
@@ -665,12 +666,16 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         # Compute min max and mean residuals,
         residual= Cp - Cp_fit_this
         array_temp=np.zeros(3)
-        array_temp[0]=np.min(np.abs(residual))
+        array_temp[0]=np.mean(np.abs(residual))
         array_temp[1]=np.max(np.abs(residual))
-        array_temp[2]=np.mean(np.abs(residual))
+        array_temp[2]=np.std(np.abs(residual))
 
-        if molecule not in residual_dict:
-            residual_dict[molecule]=array_temp
+        if species not in residual_dict:
+            residual_dict[species]=array_temp
+
+        species_list.append(species)
+        for i in range(3):
+            list_temp[i].append(array_temp[i])
 
         # Plot residuals, specific heat before and after fitting on the same figure 
         plt.figure(figsize=(8,6))
@@ -686,12 +691,15 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         ax2.set_ylabel('Residuals',color = 'black')
 
         storepath="Fit_residuals"
-        storename=storepath+"/"+molecule
+        storename=storepath+"/"+species
 
         ax1.legend()
-        plt.title('Residuals Plot For '+molecule)
+        plt.title('Residuals Plot For '+species)
         # plt.savefig(storename)
         plt.show()
+    
+    residual_data = pd.DataFrame({'Species': species_list, 'Mean Residual':list_temp[0],'Max Residual': list_temp[1],'Standard Deviation of Residual':list_temp[2]})
+    residual_data.to_csv("Residual.csv",index=False)
     return residual_dict
 #%%
 if __name__ == '__main__':
@@ -738,11 +746,8 @@ R=8.314 # Universal gas constant
 split_dict_theorets=create_split_dict_theorets()
 Cp_theorets=get_Cp_theorets(R,split_dict_theorets)
 # %%
-Cp_theorets
+residual_dict
+
 # %%
-Cp_JANAF['H2O2']
-# %%
-coe_list
-# %%
-len(coe_list[4])
+residual_dict
 # %%
