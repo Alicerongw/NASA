@@ -135,7 +135,7 @@ def create_split_dict():
 def get_Cp(R,split_dict):
     Cp_dict=dict()
     Tmax_dict=dict()
-    path = "data"
+    path = "Partition_functions"
     files= os.listdir(path) 
     for file in tqdm(files): 
         if ".txt" in file:
@@ -661,7 +661,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
             tmax=float(Tmax_this[species])
             plt.axvline(x=tmax,linestyle='--')  
 
-        storepath="pictures"
+        storepath="Cp_pictures"
         storename=storepath+"/"+species
 
 
@@ -674,7 +674,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Bu
         plt.ylabel('$C_{p}$')
         plt.xlabel('T(K)')
         plt.title('Specific Heat Fit For '+species)
-        plt.savefig(storename)
+        # plt.savefig(storename)
         plt.show() 
 
         if other_data:
@@ -863,7 +863,7 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         plt.axhline(y=0.0,c="gray")
         # plt.plot(x,residual)    
 
-        storepath="residual_and_fit"
+        storepath="Fit_residuals"
         storename=storepath+"/"+molecule
 
         ax1.legend()
@@ -891,10 +891,10 @@ if __name__ == '__main__':
     coe_Barklem=get_Barklem()    
     Tmax_this=get_Tmax_this(Tmax_hitran)
     di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_Capitelli,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,Cp_theorets)
-    # diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
-    # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
-    # store_coefficients(Tmax_this,fit_dictionary)
-    # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
+    diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
+    fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
+    store_coefficients(Tmax_this,fit_dictionary)
+    residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 
 #%%
 diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
