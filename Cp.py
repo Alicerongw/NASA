@@ -253,7 +253,7 @@ def get_polynomial_results(coefficients,x):
 def get_Tmax_this(Tmax_hitran):
     Tmax_this=dict()
     species_list=['C2H2','ClO','CO2','H2O','H2S','HCN','HI','HO2','N2','N2O','NH3','O2','PH3','SO','SO3']
-    Tmax_list=[1400.,1000.,3000.,3500.,2250.,1700.,3100.,1900.,2500.,1500.,1700.,500.,2200.,1500.,1400.]
+    Tmax_list=[1400.,1000.,3000.,3000.,2250.,1700.,3100.,1900.,2500.,1500.,1700.,500.,2200.,1500.,1400.]
     for species in Tmax_hitran:
         Tmax=Tmax_hitran[species]
         if species in species_list:
@@ -692,8 +692,8 @@ if __name__ == '__main__':
     coe_Barklem=get_Barklem()    
     Tmax_this=get_Tmax_this(Tmax_hitran)
     di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,T_Theorets, Cp_Theorets)
-    # diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
-    fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
+    diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
+    # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
     # store_coefficients(Tmax_this,fit_dictionary)
     # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 
