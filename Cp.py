@@ -253,7 +253,7 @@ def get_polynomial_results(coefficients,x):
 def get_Tmax_this(Tmax_hitran):
     Tmax_this=dict()
     species_list=['C2H2','ClO','CO2','H2O','H2S','HCN','HI','HO2','N2','N2O','NH3','O2','PH3','SO','SO3']
-    Tmax_list=[1400.,1000.,3000.,3000.,2250.,1700.,3100.,1900.,2500.,1500.,1700.,500.,2200.,1500.,1400.]
+    Tmax_list=[1400.,800.,2600.,3500.,2100.,1300.,3100.,1600.,2000.,1400.,1600.,500.,2000.,1100.,1100.]
     for species in Tmax_hitran:
         Tmax=Tmax_hitran[species]
         if species in species_list:
@@ -727,4 +727,6 @@ def compare_1000(fit_dictionary,Cp_dict):
 # %%
 compare_1000(fit_dictionary,Cp_dict)
 
+# %%
+diff_dict['ClO']
 # %%
