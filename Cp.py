@@ -253,7 +253,7 @@ def get_polynomial_results(coefficients,x):
 def get_Tmax_this(Tmax_hitran):
     Tmax_this=dict()
     species_list=['C2H2','ClO','CO2','H2O','H2S','HCN','HI','HO2','N2','N2O','NH3','O2','PH3','SO','SO3']
-    Tmax_list=[1400.,800.,2600.,3500.,2100.,1300.,3100.,1600.,2000.,1400.,1600.,500.,2000.,1100.,1100.]
+    Tmax_list=[1200.,600.,2400.,3000.,1900.,1100.,2700.,1400.,1900.,1300.,1400.,400.,1800.,1000.,1000.]
     for species in Tmax_hitran:
         Tmax=Tmax_hitran[species]
         if species in species_list:
@@ -665,7 +665,7 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         ax1.set_ylabel('Cp',color = 'red')   
         ax2.set_ylabel('Residuals',color = 'black')
 
-        storepath="Fit_residuals"
+        storepath="Fit_residuals_pictures"
         storename=storepath+"/"+species
 
         ax1.legend()
@@ -674,7 +674,7 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         plt.show()
     
     residual_data = pd.DataFrame({'Species': species_list, 'Mean Residual':list_temp[0],'Max Residual': list_temp[1],'Standard Deviation of Residual':list_temp[2]})
-    residual_data.to_csv("Residual.csv",index=False)
+    residual_data.to_csv("Fit_residuals.csv",index=False)
     return residual_dict
 #%%
 if __name__ == '__main__':
@@ -728,5 +728,13 @@ def compare_1000(fit_dictionary,Cp_dict):
 compare_1000(fit_dictionary,Cp_dict)
 
 # %%
-diff_dict['ClO']
+diff_dict['N2']
+# %%
+diff_dict['HCN']
+# %%
+len(coe_ESA)
+# %%
+Tmax_this['HCN']
+# %%
+coe_Barklem.keys()
 # %%
