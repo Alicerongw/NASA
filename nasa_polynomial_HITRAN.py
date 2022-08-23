@@ -183,7 +183,7 @@ def read_coefficient_file(data,species_list,interval_number):
     return coe
 
 # Generate a dictionary storing the specific heat fit coefficients from Burcat
-def get_Burcat(): 
+def get_Burcat():     
     Burcat=np.loadtxt("Other_Cp/Burcat_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
     Burcat_specials=['CH3Br','CH3I','CH3OH','ClO','ClONO2','COF2','GeH4','H2O2','HBr','HNO3','HO2','HOBr','HOCl','NH3','PH3','OH']
     coe_Burcat=read_coefficient_file(Burcat,Burcat_specials,2)
@@ -195,6 +195,13 @@ def get_Barklem():
     Barklem_specials=['ClO','CO','CS','H2','HBr','HCl','HF','HI','N2','NO','O2','OH','SO']
     coe_Barklem=read_coefficient_file(Barklem,Barklem_specials,2)
     return coe_Barklem
+
+# Generate a dictionary storing the specific heat fit coefficients from ExoMol
+def get_ExoMol():     
+    ExoMol=np.loadtxt("Other_Cp/ExoMol_fit.csv",delimiter=",",usecols=(2,3,4,5,6,7,8))
+    ExoMol_specials=['H2O','C2','H2O2','KOH','LiH','CO','HCN','NH3','PH3']
+    coe_ExoMol=read_coefficient_file(ExoMol,ExoMol_specials,2)
+    return coe_ExoMol
 
 # Read and store the coefficients from original nasa glenn polynomials
 def get_nasa(Cp_dict):
@@ -360,7 +367,7 @@ def get_Cp_from_coefficients(coe_dict,Tmin,Tmax,species):
         return x,Cp_fit
 
 # Using plots to compare the results with existing data
-def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,T_Theorets_GeH4,Cp_Theorets_GeH4):
+def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,coe_ExoMol,Tmax_this,T_Theorets_GeH4,Cp_Theorets_GeH4):
     di_J_dict=dict()
     di_nasa_dict=dict()
     di_Ca_dict=dict()
@@ -400,7 +407,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
                 di_nasa_dict[species]=T_di_nasa
             plt.plot(x_nasa,Cp_fit_nasa,color="black",label="NASA Glenn") 
 
-        # plot specific heat using original nasa glenn polynomials
+        # plot specific heat using original NASA glenn polynomials
         if species in coe_Burcat:
             x_Burcat,Cp_fit_Burcat=get_Cp_from_coefficients(coe_Burcat,Tmin,Tmax,species)  
             T_Burcat_di,di_Burcat=get_difference(Cp_dict,x_Burcat,Cp_fit_Burcat,species)
@@ -409,11 +416,22 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
                 di_Burcat_dict[species]=T_di_Burcat
             plt.plot(x_Burcat,Cp_fit_Burcat,color='green',label="Burcat") 
 
-        # plot specific heat using original nasa glenn polynomials
+        # plot specific heat using NASA glenn polynomials from Barklem
         if species in coe_Barklem:
             x_Barklem,Cp_fit_Barklem=get_Cp_from_coefficients(coe_Barklem,298.15,Tmax,species)            
 
             plt.plot(x_Barklem,Cp_fit_Barklem,color='orange',label="Barklem") 
+
+        # plot specific heat using original nasa glenn polynomials
+        if species in coe_ExoMol:
+            Tmax_ExoMol=Tmax
+            if species == 'NH3':
+                Tmax_ExoMol=2000.
+            if species == 'PH3':
+                Tmax_ExoMol=2000.            
+            x_ExoMol,Cp_fit_ExoMol=get_Cp_from_coefficients(coe_ExoMol,Tmin,Tmax_ExoMol,species)            
+
+            plt.plot(x_ExoMol,Cp_fit_ExoMol,color='hotpink',label="ExoMol") 
 
         if species in coe_ESA:
             T_middle=1000
@@ -459,8 +477,6 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
             T_Furtenbacher_di_O2,di_Furtenbacher_O2=get_difference(Cp_dict,T_Furtenbacher,Cp_Furtenbacher,species)
             T_di_Furtenbacher_O2=np.vstack((T_Furtenbacher_di_O2,di_Furtenbacher_O2))
             plt.plot(T_Furtenbacher,Cp_Furtenbacher,color='purple',label="Furtenbacher et.al")
-            T_Gurvich,Cp_Gurvich=np.loadtxt("Other_Cp/O2_Gurvich.txt",usecols=(0,1),unpack=True)
-            plt.scatter(T_Gurvich,Cp_Gurvich,color="hotpink",marker="x",label="Gurvich")
             T_Jaffe,Cp_Jaffe=np.loadtxt("Other_Cp/O2_Jaffe.txt",usecols=(0,1),unpack=True)
             plt.scatter(T_Jaffe,Cp_Jaffe,color="gray",marker="x",label="Jaffe")
         if species=='N2':
@@ -517,9 +533,9 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
             plt.legend()
 
 
-        plt.ylabel('$C_{p}$')
+        plt.ylabel('$C_{p}$ ($\mathrm{J} \cdot \mathrm{K}^{-1} \cdot \mathrm{mol}^{-1}$)')
         plt.xlabel('T(K)')
-        plt.title('Specific Heat Fit For '+species)
+        plt.title('Comparison of Specific heat for '+species)
         plt.savefig(storename)
         plt.show() 
 
@@ -689,9 +705,10 @@ if __name__ == '__main__':
     coe_ESA=get_ESA()
     coe_Burcat=get_Burcat()
     coe_nasa=get_nasa(Cp_dict)
-    coe_Barklem=get_Barklem()    
+    coe_Barklem=get_Barklem()  
+    coe_ExoMol=get_ExoMol()     
     Tmax_this=get_Tmax_this(Tmax_hitran)
-    di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,Tmax_this,T_Theorets, Cp_Theorets)
+    di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,coe_ExoMol,Tmax_this,T_Theorets, Cp_Theorets)
     diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
     # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
     # store_coefficients(Tmax_this,fit_dictionary)
@@ -730,11 +747,70 @@ compare_1000(fit_dictionary,Cp_dict)
 # %%
 diff_dict['N2']
 # %%
-diff_dict['HCN']
+diff_dict['CO']
 # %%
 len(coe_ESA)
 # %%
 Tmax_this['HCN']
 # %%
 coe_Barklem.keys()
+# %%
+x=np.array([200,298.15,300,400,500,600,700,800,900,1000,2000,3000,4000,5000,6000])
+#%%
+species='CO'
+x1=np.array([200.,298.15,300.,400.,500.,600.,700.,800.,900.,1000.])
+coefficient1=coe_ESA[species][0]
+Cp_fit1=get_polynomial_results(coefficient1,x1)
+x2=np.array([2000.,3000.])
+coefficient2=coe_ESA[species][1]
+Cp_fit2=get_polynomial_results(coefficient2,x2)
+x3=np.array([4000.,5000.,6000.])
+coefficient3=coe_ESA[species][2]
+Cp_fit3=get_polynomial_results(coefficient3,x3)
+x=np.hstack((x1,x2,x3))
+Cp_fit=np.hstack(( Cp_fit1, Cp_fit2,Cp_fit3))           
+#%%
+#NASA
+species='CH3OH'
+x1=np.array([200.,298.15,300.,400.,500.,600.,700.,800.,900.,1000.])
+coefficient1=coe_nasa[species][0]
+Cp_fit1=get_polynomial_results(coefficient1,x1)
+x2=np.array([1500.,2000.,3000.,3500.,4000.,5000.,6000.])
+coefficient2=coe_nasa[species][1]
+Cp_fit2=get_polynomial_results(coefficient2,x2)
+x=np.hstack((x1,x2))
+Cp_fit=np.hstack(( Cp_fit1, Cp_fit2))   
+#%%
+#BARKLEM
+species='CO'
+x1=np.array([200.,298.15,300.,400.,500.,600.,700.,800.,900.,1000.])
+coefficient1=coe_Barklem[species][0]
+Cp_fit1=get_polynomial_results(coefficient1,x1)
+x2=np.array([2000.,3000.,4000.,5000.,6000.])
+coefficient2=coe_Barklem[species][1]
+Cp_fit2=get_polynomial_results(coefficient2,x2)
+x=np.hstack((x1,x2))
+Cp_fit=np.hstack(( Cp_fit1, Cp_fit2))   
+#%%
+coefficient1=coe_ESA[species][0]
+# %%
+coe_ESA
+# %%
+coe_ESA['CO']
+# %%
+Cp_fit
+# %%
+x
+# %%
+#%%
+#Burcat
+species='CH3OH'
+x1=np.array([200.,298.15,300.,400.,500.,600.,700.,800.,900.,1000.])
+coefficient1=coe_Burcat[species][0]
+Cp_fit1=get_polynomial_results(coefficient1,x1)
+x2=np.array([1500.,2000.,3000.,3500.,4000.,5000.,6000.])
+coefficient2=coe_Burcat[species][1]
+Cp_fit2=get_polynomial_results(coefficient2,x2)
+x=np.hstack((x1,x2))
+Cp_fit=np.hstack(( Cp_fit1, Cp_fit2))   
 # %%
