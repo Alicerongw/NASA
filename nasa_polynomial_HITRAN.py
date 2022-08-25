@@ -1,4 +1,3 @@
-#%%
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -9,8 +8,15 @@ import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 from scipy.optimize import curve_fit
 
-# Create the dictionary storing the split points for each species
+
 def create_split_dict():
+    """Create the dictionary storing the split points for each species
+
+    Returns:
+        split_dict(dictionary): The keys are formula of species, the values are the intersection points of its intervals
+                                e.g: {'H2O2':[200,1500]} means the curve-fit will be done in the intervals of 
+                                200-1500K and 1500K-Tmax.
+    """    
     # To improve the accuracy of polynomial fit, the temperature has been divided into several intervls
     # The split points are used for determining the interval
     split_list=[['CH4'],['H2O2'],['ClO'],['HCN','CO','HF','HI','N2','NH3','OCS','OH','PH3','C2H2','C2N2','C2H4','CH3Cl','CH3F','OH','O2'],['SF6'],['CS','HO2','NO','NO+','SO'],['H2','HBr','HCl'],['SO3'],['C2H6'],['C4H2'],['GeH4_Theorets']]
@@ -22,10 +28,21 @@ def create_split_dict():
                 split_dict[split_list[i][j]]=split[i]
     return split_dict
 
-# Calculate specific heat, get and store the value of Tmax from HITRAN database
-# This project is interested in the temperature from 200K to 6000K
-# If Tmax > 6000K, then Tmax=6000K
+
 def get_Cp(R,split_dict):
+    """Calculate specific heat, get and store the value of Tmax from HITRAN database
+
+    Args:
+        R (float): Universal gas constant, which is equal to 8.314
+        split_dict (dictionary): Determine the intervals where the values would be fitted
+
+    Returns:
+        Cp_dict(dictionary): the computed specific heat are listed in 1 K increments 
+                             e.g:{'H2O': {200: 33.352, 201:33.353...}}
+        Tmax_dict(dictionary): the maximum temperature read from HITRAN
+                             e.g:{'H2O': 5000K}
+        T_Theorets, Cp_Theorets(array): the computed specific heat for GeH4 based on partition functions from TheoRets
+    """    
     Cp_dict=dict()
     Tmax_dict=dict()
     path = "Partition_functions"
@@ -117,6 +134,8 @@ def get_Cp(R,split_dict):
                     Cp_df.to_csv(storename,index=False)
 
                 # Store the maximum temperature in HITRAN database
+                # This project is interested in the temperature from 200K to 6000K
+                # If Tmax > 6000K, then Tmax=6000K
                 Tmax_this=T_this[-1]
                 Tmax=min(Tmax_this,6000)
                 Tmax_dict[species]=Tmax
@@ -124,8 +143,13 @@ def get_Cp(R,split_dict):
     return Cp_dict, Tmax_dict, T_Theorets, Cp_Theorets
 
 
-# Generate a dictionary storing the specific heat results from JANAF
 def get_JANAF(): 
+    """Generate a dictionary storing the specific heat results from JANAF
+
+    Returns:
+        Cp_JANAF(dictionary): the specific heats from JANAF tables
+                             e.g:{'H2O': {200: 33.349, 298.15: 33.59...}}
+    """    
     path = "Other_Cp/JANAF"
     files= os.listdir(path) 
     Cp_JANAF=dict()
@@ -150,8 +174,16 @@ def get_JANAF():
 
 
 
-# Generate a dictionary storing the specific heat fit coefficients from ESA
 def get_ESA(): 
+    """Generate a dictionary storing the specific heat fit coefficients from ESA
+
+    Returns:
+        coe_ESA(dictionary): the coefficients of NASA polynomials from ESA
+                             A 3D array is used to represents sets of coefficients for three different intervals
+                             e.g:{'O2': array([a1, a2, a3, a4, a5, a6, a7](for 50-1000K),
+                                              [a1, a2, a3, a4, a5, a6, a7](for 1000-3000K),
+                                              [a1, a2, a3, a4, a5, a6, a7](for 1000-3000K))}
+    """    
     ESA=np.loadtxt("Other_Cp/ESA_fit.csv",delimiter=",",usecols=(3,4,5,6,7,8,9))
     ESA_specials=['CO','CO2','N2','NO','NO+','NO2','N2O','O2','O3','H2']
     coe_ESA=dict()
@@ -203,9 +235,15 @@ def get_ExoMol():
     coe_ExoMol=read_coefficient_file(ExoMol,ExoMol_specials,2)
     return coe_ExoMol
 
-# Read and store the coefficients from original nasa glenn polynomials
-def get_nasa(Cp_dict):
 
+def get_nasa(Cp_dict):
+    """Read and store the coefficients from original nasa glenn polynomials
+
+    Args:
+        Cp_dict (dictionary): used to determine the species included in this project
+                              Only data of the overlapped species will be read in 
+
+    """
     # The name of some species in NASA is different from this work
     # The list is used for unifying the names
     name_nasa=['C2H2,acetylene','CH3CL','CLO','COCL2','HCL','HOCL']
@@ -252,12 +290,23 @@ def get_nasa(Cp_dict):
 
     return coe_nasa
 
-# Define the equation in the format of nasa polynomials
 def get_polynomial_results(coefficients,x):
+    """Define the equation in the format of nasa polynomials
+
+    Args:
+        coefficients (array): NASA polynomial coefficients
+                              e.g:[a1,a2,a3,a4,a5,a6,a7]
+        x (array): the array of temperature whose corresponding specific heats need to be determined
+
+    Returns:
+        Cp(array): the computed specific heats
+    """    
     Cp=8.314*(coefficients[0]*x**(-2)+coefficients[1]*x**(-1)+coefficients[2]+coefficients[3]*x+coefficients[4]*x**2+coefficients[5]*x**3+coefficients[6]*x**4)
     return Cp
 
+# Determine a new maximum temperature for species whose results become unreliable at high temperature
 def get_Tmax_this(Tmax_hitran):
+  
     Tmax_this=dict()
     species_list=['C2H2','ClO','CO2','H2O','H2S','HCN','HI','HO2','N2','N2O','NH3','O2','PH3','SO','SO3']
     Tmax_list=[1200.,600.,2400.,3000.,1900.,1100.,2700.,1400.,1900.,1300.,1400.,400.,1800.,1000.,1000.]
@@ -270,6 +319,7 @@ def get_Tmax_this(Tmax_hitran):
             Tmax_this[species]=Tmax
     return Tmax_this
 
+# Compute the relative differences between values in this project and other sources
 def get_difference(Cp_dict,T,Cp,species):
     cp_Temp=Cp_dict[species]
     T_di=[]
@@ -282,10 +332,10 @@ def get_difference(Cp_dict,T,Cp,species):
             Cp_that_di.append(float(Cp[i]))
             Cp_this_di.append(float(cp_Temp[T[i]]))  
 
-    # Cp_di=np.abs(np.array(Cp_that_di)-np.array(Cp_this_di))
     Cp_di=(np.abs(np.array(Cp_that_di)-np.array(Cp_this_di))/np.array(Cp_this_di))*100
     return T_di, Cp_di
 
+# Compute the mean and maximum differences for temperatures up to Tmax
 def get_mean_max_difference(T_di,Tmax):
     diff_temp=[]
     diff_mean_max=[]
@@ -307,6 +357,14 @@ def create_dict(diff_dict,species,sourcename,diff):
     return diff_dict    
 
 def compare_difference(di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this):
+    """Integrate differences for various sources into a dictionary
+
+    Returns:
+       diff_dict(dictionary): the mean and maximum differences between values in this project and other sources for temperatures up to Tmax
+                              Format: {'species':{' Abbreviation of data source': mean difference, max difference}}
+                              e.g:{'CO2': {'J': [0.41, 1.89],'N': [0.35, 1.84],'ESA': [0.3910165641394196, 0.8317508377400147]},
+                              (J for JANAF, N for NASA Glenn, ESA for European Space Agency, B for Burcat, SS for Sousa-Silva et al., Fur for Furtenbacher et al.)
+    """    
     diff_dict=dict()
     for species in tqdm(Cp_dict):
         Tmax=Tmax_this[species]
@@ -366,8 +424,10 @@ def get_Cp_from_coefficients(coe_dict,Tmin,Tmax,species):
             Cp_fit=np.hstack(( Cp_fit1, Cp_fit2))
         return x,Cp_fit
 
-# Using plots to compare the results with existing data
 def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,coe_ExoMol,Tmax_this,T_Theorets_GeH4,Cp_Theorets_GeH4):
+    """Using plots to compare the results with existing data and at the same time calculate absolute differences
+
+    """    
     di_J_dict=dict()
     di_nasa_dict=dict()
     di_Ca_dict=dict()
@@ -407,7 +467,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
                 di_nasa_dict[species]=T_di_nasa
             plt.plot(x_nasa,Cp_fit_nasa,color="black",label="NASA Glenn") 
 
-        # plot specific heat using original NASA glenn polynomials
+        # plot specific heat using NASA glenn polynomials from Burcat
         if species in coe_Burcat:
             x_Burcat,Cp_fit_Burcat=get_Cp_from_coefficients(coe_Burcat,Tmin,Tmax,species)  
             T_Burcat_di,di_Burcat=get_difference(Cp_dict,x_Burcat,Cp_fit_Burcat,species)
@@ -422,7 +482,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
 
             plt.plot(x_Barklem,Cp_fit_Barklem,color='orange',label="Barklem") 
 
-        # plot specific heat using original nasa glenn polynomials
+        # plot specific heat using NASA glenn polynomials from ExoMol
         if species in coe_ExoMol:
             Tmax_ExoMol=Tmax
             if species == 'NH3':
@@ -433,6 +493,7 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
 
             plt.plot(x_ExoMol,Cp_fit_ExoMol,color='hotpink',label="ExoMol") 
 
+        # plot specific heat using NASA glenn polynomials from ESA
         if species in coe_ESA:
             T_middle=1000
             if species =='H2':
@@ -541,12 +602,16 @@ def compare_and_plot_Cp(Cp_dict,Tmax_dict,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,c
 
     return di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P
 
-# Define the nasa polynomial format using for fitting
+# Define the nasa polynomial format using for curve-fitting
 def objective(x,a1,a2,a3,a4,a5,a6,a7):
     return R*(a1*x**(-2)+a2*x**(-1)+a3+a4*x+a5*x**2+a6*x**3+a7*x**4)
 
-# Get the NASA polynomial coefficients
 def get_coefficients(Cp_dict,Tmax_this):
+    """Get the NASA polynomial coefficients
+
+    Returns:
+        fit_dictionary(dictionary): the coefficients of NASA polynomials generated in this project
+    """
     fit_dictionary=dict()
     for species in Cp_dict:
         Cpdict_temp=Cp_dict[species]            
@@ -563,7 +628,7 @@ def get_coefficients(Cp_dict,Tmax_this):
         if species=='NO+':
             Tmin_index=98
         
-        # Fit the specific heat into format of NASA polynomials
+        # Fit the specific heat into the format of NASA polynomials
         fit_Tinterval=[]
         fit_Cpinterval=[]
         if Tmax<=1000:
@@ -631,6 +696,14 @@ def store_coefficients(Tmax_dict,fit_dictionary):
     fit_data.to_csv("Fit_coefficients.csv",index=False)
 
 def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
+    """Calculate the residuals of curve-fitting
+       Plot the residuals as well as the specific heat curve before and after fitting in one figure
+
+    Returns:
+        residual_dict(dictionary): the mean,max and standard deviation of residuals for each species
+                                  Format:{'Species':[mean residuals, max residuals, standard deviation of residuals]}
+                                  e.g {'CO': array([0.00075348, 0.0052405 , 0.00054651])}
+    """    
     residual_dict=dict()
     species_list=[]
     list_temp= [[] for i in range(3)]
@@ -654,7 +727,7 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         # Calculate fitted specific heat
         x,Cp_fit_this=get_Cp_from_coefficients(fit_dictionary,Tmin,Tmax,species)
 
-        # Compute min max and mean residuals,
+        # Compute mean,max and standard deviation of residuals
         residual= Cp - Cp_fit_this
         array_temp=np.zeros(3)
         array_temp[0]=np.mean(np.abs(residual))
@@ -668,8 +741,6 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         for i in range(3):
             list_temp[i].append(array_temp[i])
 
-        # Plot residuals, specific heat before and after fitting on the same figure 
-        plt.figure(figsize=(8,6))
         fig,ax1 = plt.subplots()
         ax2 = ax1.twinx()          
         ax1.plot(x,Cp,color="blue",label="Original Cp")
@@ -685,14 +756,14 @@ def calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary):
         storename=storepath+"/"+species
 
         ax1.legend()
-        plt.title('Residuals Plot For '+species)
-        # plt.savefig(storename)
+        plt.title('Curve-fitting Result For '+species)
+        plt.savefig(storename)
         plt.show()
     
-    residual_data = pd.DataFrame({'Species': species_list, 'Mean Residual':list_temp[0],'Max Residual': list_temp[1],'Standard Deviation of Residual':list_temp[2]})
+    residual_data = pd.DataFrame({'Species': species_list, 'Mean Residuals':list_temp[0],'Max Residuals': list_temp[1],'Standard Deviation of Residuals':list_temp[2]})
     residual_data.to_csv("Fit_residuals.csv",index=False)
     return residual_dict
-#%%
+
 if __name__ == '__main__':
 
     # Calculate the specific heat based on the partition functions from HITRAN database
@@ -708,109 +779,15 @@ if __name__ == '__main__':
     coe_Barklem=get_Barklem()  
     coe_ExoMol=get_ExoMol()     
     Tmax_this=get_Tmax_this(Tmax_hitran)
+
+    # Plot Cp curves from various sources and calculate the differences between them
     di_J_dict, di_nasa_dict, di_Burcat_dict,di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2, T_di_SS_N, T_di_SS_P=compare_and_plot_Cp(Cp_dict,Tmax_hitran,Cp_JANAF,coe_ESA,coe_nasa,coe_Burcat,coe_Barklem,coe_ExoMol,Tmax_this,T_Theorets, Cp_Theorets)
     diff_dict=compare_difference(di_J_dict, di_nasa_dict,di_Burcat_dict, di_Ca_dict, T_di_Furtenbacher, T_di_Furtenbacher_O2,T_di_SS_N, T_di_SS_P,Cp_dict,Tmax_this)
-    # fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
-    # store_coefficients(Tmax_this,fit_dictionary)
-    # residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 
-#%%
-def compare_1000(fit_dictionary,Cp_dict):
-    species_list=[]
-    first_1000_list=[]
-    second_1000_list=[]
-    Tabulated_1000_list=[]
-    difference_list=[]
+    # Fit the results into the format of polynomials and store the coefficient
+    fit_dictionary=get_coefficients(Cp_dict,Tmax_this)
+    store_coefficients(Tmax_this,fit_dictionary)
 
-    sorted_list=sorted(fit_dictionary)
-    for ii in range(len(sorted_list)):
-        species=sorted_list[ii]
-        Tmin=200.
-        if species=='NO+':
-            Tmin=298.15
-        coefficient_temp=fit_dictionary[species]
-        if len(coefficient_temp)>1:
-            first_1000=get_polynomial_results(coefficient_temp[0],1000)
-            second_1000=get_polynomial_results(coefficient_temp[1],1000)
-            Tabulated_1000=Cp_dict[species][1000]
-            species_list.append(species)
-            first_1000_list.append(first_1000)
-            second_1000_list.append(second_1000)
-            difference_list.append(abs(first_1000-second_1000))
-            Tabulated_1000_list.append(Tabulated_1000)
-    data1000 = pd.DataFrame({'Species': species_list, 'First Cp1000':first_1000_list,'Second Cp1000':second_1000_list,'Tabulated Cp1000':Tabulated_1000_list,'Difference':difference_list})
-    data1000.to_csv("Specific_heat_at_1000K.csv",index=False)
+    # Compute the residuals of polynomial fitting
+    residual_dict=calculate_and_plot_residuals(Tmax_this,Cp_dict,fit_dictionary)
 
-# %%
-compare_1000(fit_dictionary,Cp_dict)
-
-# %%
-diff_dict['N2']
-# %%
-diff_dict['CO']
-# %%
-len(coe_ESA)
-# %%
-Tmax_this['HCN']
-# %%
-coe_Barklem.keys()
-# %%
-x=np.array([200,298.15,300,400,500,600,700,800,900,1000,2000,3000,4000,5000,6000])
-#%%
-species='CO'
-x1=np.array([200.,298.15,300.,400.,500.,600.,700.,800.,900.,1000.])
-coefficient1=coe_ESA[species][0]
-Cp_fit1=get_polynomial_results(coefficient1,x1)
-x2=np.array([2000.,3000.])
-coefficient2=coe_ESA[species][1]
-Cp_fit2=get_polynomial_results(coefficient2,x2)
-x3=np.array([4000.,5000.,6000.])
-coefficient3=coe_ESA[species][2]
-Cp_fit3=get_polynomial_results(coefficient3,x3)
-x=np.hstack((x1,x2,x3))
-Cp_fit=np.hstack(( Cp_fit1, Cp_fit2,Cp_fit3))           
-#%%
-#NASA
-species='CH3OH'
-x1=np.array([200.,298.15,300.,400.,500.,600.,700.,800.,900.,1000.])
-coefficient1=coe_nasa[species][0]
-Cp_fit1=get_polynomial_results(coefficient1,x1)
-x2=np.array([1500.,2000.,3000.,3500.,4000.,5000.,6000.])
-coefficient2=coe_nasa[species][1]
-Cp_fit2=get_polynomial_results(coefficient2,x2)
-x=np.hstack((x1,x2))
-Cp_fit=np.hstack(( Cp_fit1, Cp_fit2))   
-#%%
-#BARKLEM
-species='CO'
-x1=np.array([200.,298.15,300.,400.,500.,600.,700.,800.,900.,1000.])
-coefficient1=coe_Barklem[species][0]
-Cp_fit1=get_polynomial_results(coefficient1,x1)
-x2=np.array([2000.,3000.,4000.,5000.,6000.])
-coefficient2=coe_Barklem[species][1]
-Cp_fit2=get_polynomial_results(coefficient2,x2)
-x=np.hstack((x1,x2))
-Cp_fit=np.hstack(( Cp_fit1, Cp_fit2))   
-#%%
-coefficient1=coe_ESA[species][0]
-# %%
-coe_ESA
-# %%
-coe_ESA['CO']
-# %%
-Cp_fit
-# %%
-x
-# %%
-#%%
-#Burcat
-species='CH3OH'
-x1=np.array([200.,298.15,300.,400.,500.,600.,700.,800.,900.,1000.])
-coefficient1=coe_Burcat[species][0]
-Cp_fit1=get_polynomial_results(coefficient1,x1)
-x2=np.array([1500.,2000.,3000.,3500.,4000.,5000.,6000.])
-coefficient2=coe_Burcat[species][1]
-Cp_fit2=get_polynomial_results(coefficient2,x2)
-x=np.hstack((x1,x2))
-Cp_fit=np.hstack(( Cp_fit1, Cp_fit2))   
-# %%
